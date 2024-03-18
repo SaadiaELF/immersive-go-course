@@ -11,7 +11,8 @@ import (
 
 func main() {
 	retries := 0
-	for retries <= 3 {
+	// This loop will run only if the number of reties doesn't exceed 3
+	for retries < 3 {
 		// Connect to the server and getting a response
 		resp, err := http.Get("http://localhost:8080")
 		// Show error message if connection is not established
@@ -37,8 +38,9 @@ func main() {
 		// Handle cases depending on the Status code of the response
 		switch resp.StatusCode {
 		case 200:
-			// Convert response body from binary to string
+			// Set the retries number to 0 so we can run the program many time when the response is 200
 			retries = 0
+			// Convert response body from binary to string
 			sb := string(body)
 			fmt.Fprint(os.Stdout, sb+"\n")
 			os.Exit(0)
