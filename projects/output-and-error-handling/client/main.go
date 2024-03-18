@@ -14,7 +14,9 @@ func main() {
 	resp, err := http.Get("http://localhost:8080")
 	// Show error message if connection is not established
 	if err != nil {
-		handleError()
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprintf(os.Stderr, "Failed to make http request: %v\n", err)
+		os.Exit(1)
 	}
 
 	// Close the response body after been fully read
@@ -25,42 +27,47 @@ func main() {
 
 	// Show error message if we cannot read the response body
 	if err != nil {
-		handleError()
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprintf(os.Stderr, "Failed to read response body: %v\n", err)
+		os.Exit(1)
 	}
-	// Convert response body from binary to string
-	sb := string(body)
 
 	// Handle cases depending on the Status code of the response
 	switch resp.StatusCode {
 	case 200:
+		// Convert response body from binary to string
+		sb := string(body)
 		fmt.Fprint(os.Stdout, sb+"\n")
+		os.Exit(0)
 	case 429:
 		handleRateLimited(resp.Header.Get("Retry-After"))
 	case 500:
-		fmt.Fprint(os.Stderr, sb+"\n")
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprint(os.Stderr, "Internal Server Error\n")
+		os.Exit(1)
 	default:
-		handleError()
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprint(os.Stderr, "Unexpected Error\n")
+		os.Exit(1)
 	}
-}
-
-func handleError() {
-	fmt.Println("Sorry we cannot get the weather")
 }
 
 // Handle response and retry depending on the Retry-After header
 func handleRateLimited(retryTime string) {
 	retrySeconds := 0
-	var err = error(nil)
+	var err error
 	retryTimeDate, err := time.Parse(time.RFC1123, retryTime)
 
-	if retryTime == "a while" {
-		retrySeconds = 3
-	} else if err == nil {
+	if err == nil {
 		retrySeconds = int(time.Until(retryTimeDate).Seconds())
+	} else if retryTime == "a while" {
+		retrySeconds = 5
 	} else {
 		retrySeconds, err = strconv.Atoi(retryTime)
 		if err != nil {
-			handleError()
+			fmt.Print("Sorry we cannot get the weather!")
+			fmt.Fprintf(os.Stderr, "Internal Error : Failed to convert retry time: %v\n", err)
+			os.Exit(1)
 		}
 	}
 	if retrySeconds > 1 && retrySeconds <= 5 {
@@ -68,6 +75,8 @@ func handleRateLimited(retryTime string) {
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 		main()
 	} else {
-		handleError()
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprint(os.Stderr, "Internal Error : Failed to retry\n")
+		os.Exit(1)
 	}
 }
