@@ -38,6 +38,7 @@ func main() {
 		switch resp.StatusCode {
 		case 200:
 			// Convert response body from binary to string
+			retries = 0
 			sb := string(body)
 			fmt.Fprint(os.Stdout, sb+"\n")
 			os.Exit(0)
