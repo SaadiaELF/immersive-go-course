@@ -13,21 +13,12 @@ func main() {
 	retries := 0
 	// This loop will run only if the number of reties doesn't exceed 3
 	for retries < 3 {
-		// Connect to the server and getting a response
-		resp, err := http.Get("http://localhost:8080")
-		// Show error message if connection is not established
-		if err != nil {
-			fmt.Print("Sorry we cannot get the weather!\n")
-			fmt.Fprintf(os.Stderr, "Failed to make http request: %v\n", err)
-			os.Exit(1)
-		}
-
+		resp := getWeather()
 		// Close the response body after been fully read
 		defer resp.Body.Close()
 
 		// Read response body and store it in a var
 		body, err := io.ReadAll(resp.Body)
-
 		// Show error message if we cannot read the response body
 		if err != nil {
 			fmt.Print("Sorry we cannot get the weather!\n")
@@ -40,6 +31,7 @@ func main() {
 		case 200:
 			// Set the retries number to 0 so we can run the program many time when the response is 200
 			retries = 0
+
 			// Convert response body from binary to string
 			sb := string(body)
 			fmt.Fprint(os.Stdout, sb+"\n")
@@ -56,6 +48,18 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func getWeather() *http.Response {
+	// Connect to the server and getting a response
+	resp, err := http.Get("http://localhost:8080")
+	// Show error message if connection is not established
+	if err != nil {
+		fmt.Print("Sorry we cannot get the weather!\n")
+		fmt.Fprintf(os.Stderr, "Failed to make http request: %v\n", err)
+		os.Exit(1)
+	}
+	return resp
 }
 
 // Handle response and retry depending on the Retry-After header
