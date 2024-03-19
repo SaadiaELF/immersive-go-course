@@ -41,7 +41,7 @@ func main() {
 			os.Exit(1)
 		default:
 			errorHandler()
-			fmt.Fprintln(os.Stderr, "Unexpected Error")
+			fmt.Fprintf(os.Stderr, "%v Unexpected Error", resp.StatusCode)
 			os.Exit(1)
 		}
 	}
