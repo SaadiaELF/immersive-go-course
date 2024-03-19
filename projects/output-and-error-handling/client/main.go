@@ -21,7 +21,7 @@ func main() {
 		body, err := io.ReadAll(resp.Body)
 		// Show error message if we cannot read the response body
 		if err != nil {
-			fmt.Print("Sorry we cannot get the weather!\n")
+			errorHandler()
 			fmt.Fprintf(os.Stderr, "Failed to read response body: %v\n", err)
 			os.Exit(1)
 		}
@@ -34,17 +34,17 @@ func main() {
 
 			// Convert response body from binary to string
 			sb := string(body)
-			fmt.Fprint(os.Stdout, sb+"\n")
+			fmt.Fprintln(os.Stdout, sb)
 			os.Exit(0)
 		case 429:
 			handleRateLimited(resp.Header.Get("Retry-After"), retries)
 		case 500:
-			fmt.Print("Sorry we cannot get the weather!\n")
-			fmt.Fprint(os.Stderr, "Internal Server Error\n")
+			errorHandler()
+			fmt.Fprintln(os.Stderr, "Internal Server Error")
 			os.Exit(1)
 		default:
-			fmt.Print("Sorry we cannot get the weather!\n")
-			fmt.Fprint(os.Stderr, "Unexpected Error\n")
+			errorHandler()
+			fmt.Fprintln(os.Stderr, "Unexpected Error")
 			os.Exit(1)
 		}
 	}
@@ -55,11 +55,14 @@ func getWeather() *http.Response {
 	resp, err := http.Get("http://localhost:8080")
 	// Show error message if connection is not established
 	if err != nil {
-		fmt.Print("Sorry we cannot get the weather!\n")
+		errorHandler()
 		fmt.Fprintf(os.Stderr, "Failed to make http request: %v\n", err)
-		os.Exit(1)
 	}
 	return resp
+}
+
+func errorHandler() {
+	fmt.Fprintln(os.Stderr, "Sorry we cannot get the weather!")
 }
 
 // Handle response and retry depending on the Retry-After header
@@ -75,7 +78,7 @@ func handleRateLimited(retryTime string, retries int) {
 	} else {
 		retrySeconds, err = strconv.Atoi(retryTime)
 		if err != nil {
-			fmt.Print("Sorry we cannot get the weather!")
+			errorHandler()
 			fmt.Fprintf(os.Stderr, "Internal Error : Failed to convert retry time: %v\n", err)
 			os.Exit(1)
 		}
@@ -85,8 +88,8 @@ func handleRateLimited(retryTime string, retries int) {
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 		retries++
 	} else {
-		fmt.Print("Sorry we cannot get the weather!\n")
-		fmt.Fprint(os.Stderr, "Internal Error : Failed to retry\n")
+		errorHandler()
+		fmt.Fprintln(os.Stderr, "Internal Error : Failed to retry")
 		os.Exit(1)
 	}
 }
