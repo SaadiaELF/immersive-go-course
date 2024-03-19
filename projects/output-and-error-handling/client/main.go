@@ -34,7 +34,12 @@ func main() {
 			fmt.Fprintln(os.Stdout, sb)
 			os.Exit(0)
 		case 429:
-			handleRateLimited(resp.Header.Get("Retry-After"), retries)
+			err := handleRateLimited(resp.Header.Get("Retry-After"), retries)
+			if err != nil {
+				errorHandler()
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
 		case 500:
 			errorHandler()
 			fmt.Fprintln(os.Stderr, "Internal Server Error")
@@ -63,7 +68,7 @@ func errorHandler() {
 }
 
 // Handle response and retry depending on the Retry-After header
-func handleRateLimited(retryTime string, retries int) {
+func handleRateLimited(retryTime string, retries int) error {
 	retrySeconds := 0
 	var err error
 	retryTimeDate, err := time.Parse(time.RFC1123, retryTime)
@@ -75,8 +80,7 @@ func handleRateLimited(retryTime string, retries int) {
 	} else {
 		retrySeconds, err = strconv.Atoi(retryTime)
 		if err != nil {
-			errorHandler()
-			fmt.Fprintf(os.Stderr, "Internal Error : Failed to convert retry time: %v\n", err)
+			return fmt.Errorf("internal Error: Failed to convert retry time: %v", err)
 		}
 	}
 	if retrySeconds > 1 && retrySeconds <= 5 {
@@ -84,7 +88,7 @@ func handleRateLimited(retryTime string, retries int) {
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 		retries++
 	} else {
-		errorHandler()
-		fmt.Fprintln(os.Stderr, "Internal Error : Failed to retry")
+		return fmt.Errorf("internal Error : Failed to retry")
 	}
+	return nil
 }
