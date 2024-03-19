@@ -34,7 +34,7 @@ func main() {
 			fmt.Fprintln(os.Stdout, sb)
 			os.Exit(0)
 		case 429:
-			err := handleRateLimited(resp.Header.Get("Retry-After"), retries)
+			err := handleRateLimited(resp.Header.Get("Retry-After"))
 			if err != nil {
 				errorHandler()
 				fmt.Fprintln(os.Stderr, err)
@@ -49,6 +49,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%v Unexpected Error", resp.StatusCode)
 			os.Exit(1)
 		}
+		retries++
 	}
 }
 
@@ -68,7 +69,7 @@ func errorHandler() {
 }
 
 // Handle response and retry depending on the Retry-After header
-func handleRateLimited(retryTime string, retries int) error {
+func handleRateLimited(retryTime string) error {
 	retrySeconds := 0
 	var err error
 	retryTimeDate, err := time.Parse(time.RFC1123, retryTime)
@@ -86,7 +87,6 @@ func handleRateLimited(retryTime string, retries int) error {
 	if retrySeconds > 1 && retrySeconds <= 5 {
 		fmt.Printf("We will retry to get you the weather. Please wait %d seconds\n", retrySeconds)
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
-		retries++
 	} else {
 		return fmt.Errorf("internal Error : Failed to retry")
 	}
