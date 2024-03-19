@@ -29,9 +29,6 @@ func main() {
 		// Handle cases depending on the Status code of the response
 		switch resp.StatusCode {
 		case 200:
-			// Set the retries number to 0 so we can run the program many time when the response is 200
-			retries = 0
-
 			// Convert response body from binary to string
 			sb := string(body)
 			fmt.Fprintln(os.Stdout, sb)
@@ -80,7 +77,6 @@ func handleRateLimited(retryTime string, retries int) {
 		if err != nil {
 			errorHandler()
 			fmt.Fprintf(os.Stderr, "Internal Error : Failed to convert retry time: %v\n", err)
-			os.Exit(1)
 		}
 	}
 	if retrySeconds > 1 && retrySeconds <= 5 {
@@ -90,6 +86,5 @@ func handleRateLimited(retryTime string, retries int) {
 	} else {
 		errorHandler()
 		fmt.Fprintln(os.Stderr, "Internal Error : Failed to retry")
-		os.Exit(1)
 	}
 }
