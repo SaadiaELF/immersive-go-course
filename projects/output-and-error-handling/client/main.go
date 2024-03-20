@@ -9,14 +9,17 @@ import (
 	"time"
 )
 
-const url = "http://localhost:8080"
+const (
+	url        = "http://localhost:8080"
+	maxRetries = 3
+)
 
 func main() {
-	retries := 0
+
 	// Create an HTTP client
 	client := &http.Client{}
 	// This loop will run only if the number of reties doesn't exceed 3
-	for retries < 3 {
+	for retries := 0; retries < maxRetries; retries++ {
 		resp, err := getWeather(url, client)
 		if err != nil {
 			errorHandler()
@@ -58,7 +61,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%v Unexpected Error", resp.StatusCode)
 			os.Exit(1)
 		}
-		retries++
 	}
 }
 
