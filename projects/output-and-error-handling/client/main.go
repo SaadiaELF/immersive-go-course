@@ -9,11 +9,20 @@ import (
 	"time"
 )
 
+const url = "http://localhost:8080"
+
 func main() {
 	retries := 0
+	// Create an HTTP client
+	client := &http.Client{}
 	// This loop will run only if the number of reties doesn't exceed 3
 	for retries < 3 {
-		resp := getWeather()
+		resp, err := getWeather(url, client)
+		if err != nil {
+			errorHandler()
+			fmt.Fprintf(os.Stderr, "Failed to get weather: %v\n", err)
+			os.Exit(1)
+		}
 		// Close the response body after been fully read
 		defer resp.Body.Close()
 
@@ -53,15 +62,14 @@ func main() {
 	}
 }
 
-func getWeather() *http.Response {
+func getWeather(url string, client *http.Client) (*http.Response, error) {
 	// Connect to the server and getting a response
-	resp, err := http.Get("http://localhost:8080")
+	resp, err := client.Get(url)
 	// Show error message if connection is not established
 	if err != nil {
-		errorHandler()
-		fmt.Fprintf(os.Stderr, "Failed to make http request: %v\n", err)
+		return nil, fmt.Errorf("failed to make http request: %v", err)
 	}
-	return resp
+	return resp, nil
 }
 
 func errorHandler() {
