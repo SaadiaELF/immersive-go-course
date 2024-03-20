@@ -29,21 +29,10 @@ func main() {
 		// Close the response body after been fully read
 		defer resp.Body.Close()
 
-		// Read response body and store it in a var
-		body, err := io.ReadAll(resp.Body)
-		// Show error message if we cannot read the response body
-		if err != nil {
-			errorHandler()
-			fmt.Fprintf(os.Stderr, "Failed to read response body: %v\n", err)
-			os.Exit(1)
-		}
-
 		// Handle cases depending on the Status code of the response
 		switch resp.StatusCode {
 		case 200:
-			// Convert response body from binary to string
-			sb := string(body)
-			fmt.Fprintln(os.Stdout, sb)
+			handleSuccessResponse(resp)
 			os.Exit(0)
 		case 429:
 			err := handleRateLimited(resp.Header.Get("Retry-After"))
@@ -74,6 +63,19 @@ func getWeather(url string, client *http.Client) (*http.Response, error) {
 	return resp, nil
 }
 
+func handleSuccessResponse(resp *http.Response) error {
+	// Read response body and store it in a var
+	body, err := io.ReadAll(resp.Body)
+	// Show error message if we cannot read the response body
+	if err != nil {
+		return fmt.Errorf("failed to read response body : %v", err)
+		// errorHandler()
+		// fmt.Fprintf(os.Stderr, "Failed to read response body: %v\n", err)
+	}
+	// Convert response body from binary to string
+	fmt.Fprintln(os.Stdout, string(body))
+	return nil
+}
 func errorHandler() {
 	fmt.Fprintln(os.Stderr, "Sorry we cannot get the weather!")
 }
