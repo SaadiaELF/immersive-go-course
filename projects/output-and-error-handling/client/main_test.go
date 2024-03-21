@@ -30,3 +30,24 @@ func TestHandleWeatherRequest_Success(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleWeatherRequest_InternalServerError(t *testing.T) {
+	errorMessage := "Internal Server Error"
+	errorStatusCode := http.StatusInternalServerError
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(errorStatusCode)
+		w.Write([]byte(errorMessage))
+	}))
+	defer svr.Close()
+
+	client := &http.Client{}
+	_, err := handleWeatherRequest(svr.URL, client, time.Now(), 3)
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+
+	expectedError := fmt.Sprint(errorStatusCode, " : ", errorMessage)
+	if err.Error() != expectedError {
+		t.Errorf("expected error message to be %s, got %s", expectedError, err.Error())
+	}
+}
