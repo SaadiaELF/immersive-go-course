@@ -15,11 +15,10 @@ const (
 )
 
 func main() {
-	currentTime := time.Now()
 	client := &http.Client{}
 
 	for retries := 0; retries <= maxRetries; retries++ {
-		response, err := handleWeatherRequest(url, client, currentTime, retries)
+		response, err := makeWeatherRequest(url, client, retries)
 		if err != nil {
 			handleError(err)
 			os.Exit(1)
@@ -31,30 +30,30 @@ func main() {
 	}
 }
 
-func handleWeatherRequest(url string, client *http.Client, currentTime time.Time, retries int) (string, error) {
+func makeWeatherRequest(url string, client *http.Client, retries int) (string, error) {
 	resp, err := getWeather(url, client)
 	if err != nil {
-		return "", fmt.Errorf("failed to get weather: %v", err)
+		return "", fmt.Errorf("failed to get weather: %w", err)
 	}
 	defer resp.Body.Close()
 
-	return handleResponse(resp, currentTime, retries)
+	return handleResponse(resp, retries)
 }
 
 func getWeather(url string, client *http.Client) (*http.Response, error) {
 	resp, err := client.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to make http request: %v", err)
+		return nil, fmt.Errorf("failed to make http request: %w", err)
 	}
 	return resp, nil
 }
 
-func handleResponse(resp *http.Response, currentTime time.Time, retries int) (string, error) {
+func handleResponse(resp *http.Response, retries int) (string, error) {
 	switch resp.StatusCode {
 	case 200:
 		return handleSuccessResponse(resp)
 	case 429:
-		return "", handleRateLimited(resp.Header.Get("Retry-After"), currentTime, retries)
+		return "", handleRateLimited(resp.Header.Get("Retry-After"), retries)
 	case 500:
 		return "", fmt.Errorf("%d : Internal Server Error", resp.StatusCode)
 	default:
@@ -64,7 +63,7 @@ func handleResponse(resp *http.Response, currentTime time.Time, retries int) (st
 func handleSuccessResponse(resp *http.Response) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("%d : Failed to read response body : %v", resp.StatusCode, err)
+		return "", fmt.Errorf("%d : Failed to read response body : %w", resp.StatusCode, err)
 	}
 
 	return string(body), nil
@@ -74,8 +73,8 @@ func handleError(err error) {
 	fmt.Fprintf(os.Stderr, "%v\n", err)
 }
 
-func handleRateLimited(retryTime string, currentTime time.Time, retries int) error {
-	retrySeconds, err := convertTime(retryTime, currentTime)
+func handleRateLimited(retryTime string, retries int) error {
+	retrySeconds, err := convertTime(retryTime)
 	if err != nil {
 		return err
 	}
@@ -88,22 +87,21 @@ func handleRateLimited(retryTime string, currentTime time.Time, retries int) err
 	}
 }
 
-func convertTime(retryTime string, currentTime time.Time) (int, error) {
-	if retryTime == http.TimeFormat {
+func convertTime(retryTime string) (int, error) {
+	if _, err := time.Parse(http.TimeFormat, retryTime); err == nil {
 		httpTime, err := time.Parse(http.TimeFormat, retryTime)
 		if err != nil {
-			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format: %v", err)
+			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format: %w", err)
 		}
-		retrySeconds := int(currentTime.Sub(httpTime).Seconds())
+		retrySeconds := int(time.Until(httpTime).Seconds())
 		return retrySeconds, nil
 	}
-
 	if retryTime == "a while" {
 		return 5, nil
 	} else {
 		retrySeconds, err := strconv.Atoi(retryTime)
 		if err != nil {
-			return 0, fmt.Errorf("internal Error: Failed to convert retry time: %v", err)
+			return 0, fmt.Errorf("internal Error: Failed to convert retry time: %w", err)
 		}
 		return retrySeconds, nil
 	}
