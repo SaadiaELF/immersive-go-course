@@ -82,8 +82,12 @@ func handleRateLimited(retryTime string, retries int) error {
 		fmt.Printf("We will retry to get you the weather. Please wait %d seconds\n", retrySeconds)
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 		return nil
+	} else if retries >= maxRetries {
+		return fmt.Errorf("internal Error : Failed to retry due to exceeded rate limit ")
+	} else if retrySeconds > 5 {
+		return fmt.Errorf("internal Error : Failed to retry due to duration limit")
 	} else {
-		return fmt.Errorf("internal Error : Failed to retry")
+		return fmt.Errorf("internal Error : Failed to retry  for an unknown reason")
 	}
 }
 
