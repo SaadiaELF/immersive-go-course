@@ -15,11 +15,11 @@ const (
 )
 
 func main() {
-
+	currentTime := time.Now()
 	// Create an HTTP client
 	client := &http.Client{}
-	// This loop will run only if the number of reties doesn't exceed 3
-	for retries := 0; retries < maxRetries; retries++ {
+	// This loop will run only if the number of retries doesn't exceed 3
+	for retries := 0; retries <= maxRetries; retries++ {
 		resp, err := getWeather(url, client)
 		if err != nil {
 			handleError(err)
@@ -28,7 +28,7 @@ func main() {
 		// Close the response body after been fully read
 		defer resp.Body.Close()
 
-		if err := handleResponse(resp); err != nil {
+		if err := handleResponse(resp, currentTime, retries); err != nil {
 			handleError(err)
 			os.Exit(1)
 		}
@@ -46,12 +46,12 @@ func getWeather(url string, client *http.Client) (*http.Response, error) {
 }
 
 // Handle cases depending on the Status code of the response
-func handleResponse(resp *http.Response) error {
+func handleResponse(resp *http.Response, currentTime time.Time, retries int) error {
 	switch resp.StatusCode {
 	case 200:
 		return handleSuccessResponse(resp)
 	case 429:
-		return handleRateLimited(resp.Header.Get("Retry-After"))
+		return handleRateLimited(resp.Header.Get("Retry-After"), currentTime, retries)
 	case 500:
 		return fmt.Errorf("%d : Internal Server Error", resp.StatusCode)
 	default:
@@ -75,26 +75,37 @@ func handleError(err error) {
 }
 
 // Handle response and retry depending on the Retry-After header
-func handleRateLimited(retryTime string) error {
-	retrySeconds := 0
-	var err error
-	retryTimeDate, err := time.Parse(time.RFC1123, retryTime)
-
-	if err == nil {
-		retrySeconds = int(time.Until(retryTimeDate).Seconds())
-	} else if retryTime == "a while" {
-		retrySeconds = 5
-	} else {
-		retrySeconds, err = strconv.Atoi(retryTime)
-		if err != nil {
-			return fmt.Errorf("internal Error: Failed to convert retry time: %v", err)
-		}
+func handleRateLimited(retryTime string, currentTime time.Time, retries int) error {
+	retrySeconds, err := convertTime(retryTime, currentTime)
+	if err != nil {
+		return err
 	}
-	if retrySeconds > 1 && retrySeconds <= 5 {
+	if retrySeconds > 1 && retrySeconds <= 5 && retries < maxRetries {
 		fmt.Printf("We will retry to get you the weather. Please wait %d seconds\n", retrySeconds)
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 	} else {
 		return fmt.Errorf("internal Error : Failed to retry")
 	}
 	return nil
+}
+
+func convertTime(retryTime string, currentTime time.Time) (int, error) {
+
+	if retryTime == http.TimeFormat {
+		httpTime, err := time.Parse(http.TimeFormat, retryTime)
+		if err != nil {
+			return 0, fmt.Errorf("error parsing HTTP Time Format: %v", err)
+		}
+		return int(currentTime.Sub(httpTime).Seconds()), nil
+	}
+
+	if retryTime == "a while" {
+		return 5, nil
+	} else {
+		retrySeconds, err := strconv.Atoi(retryTime)
+		if err != nil {
+			return 0, fmt.Errorf("internal Error: Failed to convert retry time: %v", err)
+		}
+		return retrySeconds, nil
+	}
 }
