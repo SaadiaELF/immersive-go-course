@@ -94,9 +94,10 @@ func convertTime(retryTime string, currentTime time.Time) (int, error) {
 	if retryTime == http.TimeFormat {
 		httpTime, err := time.Parse(http.TimeFormat, retryTime)
 		if err != nil {
-			return 0, fmt.Errorf("error parsing HTTP Time Format: %v", err)
+			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format: %v", err)
 		}
-		return int(currentTime.Sub(httpTime).Seconds()), nil
+		retrySeconds := int(currentTime.Sub(httpTime).Seconds())
+		return retrySeconds, nil
 	}
 
 	if retryTime == "a while" {
