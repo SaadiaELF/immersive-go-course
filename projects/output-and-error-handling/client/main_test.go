@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
-func TestGetWeather_Success(t *testing.T) {
+func TestHandleWeatherRequest_Success(t *testing.T) {
 	expRespSlice := [][]byte{[]byte("Today it will be sunny!"), []byte("Tomorrow it will be rainy!")}
 
 	for i, expected := range expRespSlice {
@@ -19,15 +19,13 @@ func TestGetWeather_Success(t *testing.T) {
 			}))
 			defer svr.Close()
 			client := &http.Client{}
-			resp, err := getWeather(svr.URL, client)
+			resp, err := handleWeatherRequest(svr.URL, client, time.Now(), 3)
 			if err != nil {
 				t.Errorf("expected err to be nil got %v", err)
 			}
-			defer resp.Body.Close()
-			body, _ := io.ReadAll(resp.Body)
 
-			if string(body) != string(expected) {
-				t.Errorf("expected response body to be %s got %s", expected, body)
+			if resp != string(expected) {
+				t.Errorf("expected response body to be %s got %s", expected, resp)
 			}
 		})
 	}
