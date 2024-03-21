@@ -20,19 +20,26 @@ func main() {
 	client := &http.Client{}
 	// This loop will run only if the number of retries doesn't exceed 3
 	for retries := 0; retries <= maxRetries; retries++ {
-		resp, err := getWeather(url, client)
+		response, err := handleWeatherRequest(url, client, currentTime, retries)
 		if err != nil {
 			handleError(err)
 			os.Exit(1)
 		}
-		// Close the response body after been fully read
-		defer resp.Body.Close()
-
-		if err := handleResponse(resp, currentTime, retries); err != nil {
-			handleError(err)
-			os.Exit(1)
+		if response != "" {
+			fmt.Fprintln(os.Stdout, response)
+			os.Exit(0)
 		}
 	}
+}
+
+func handleWeatherRequest(url string, client *http.Client, currentTime time.Time, retries int) (string, error) {
+	resp, err := getWeather(url, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get weather: %v", err)
+	}
+	defer resp.Body.Close()
+
+	return handleResponse(resp, currentTime, retries)
 }
 
 func getWeather(url string, client *http.Client) (*http.Response, error) {
@@ -46,28 +53,28 @@ func getWeather(url string, client *http.Client) (*http.Response, error) {
 }
 
 // Handle cases depending on the Status code of the response
-func handleResponse(resp *http.Response, currentTime time.Time, retries int) error {
+func handleResponse(resp *http.Response, currentTime time.Time, retries int) (string, error) {
 	switch resp.StatusCode {
 	case 200:
 		return handleSuccessResponse(resp)
 	case 429:
-		return handleRateLimited(resp.Header.Get("Retry-After"), currentTime, retries)
+		return "", handleRateLimited(resp.Header.Get("Retry-After"), currentTime, retries)
 	case 500:
-		return fmt.Errorf("%d : Internal Server Error", resp.StatusCode)
+		return "", fmt.Errorf("%d : Internal Server Error", resp.StatusCode)
 	default:
-		return fmt.Errorf("%d : Unexpected Error", resp.StatusCode)
+		return "", fmt.Errorf("%d : Unexpected Error", resp.StatusCode)
 	}
 }
-func handleSuccessResponse(resp *http.Response) error {
+func handleSuccessResponse(resp *http.Response) (string, error) {
 	// Read response body and store it in a var
 	body, err := io.ReadAll(resp.Body)
 	// Show error message if we cannot read the response body
 	if err != nil {
-		return fmt.Errorf("%d : Failed to read response body : %v", resp.StatusCode, err)
+		return "", fmt.Errorf("%d : Failed to read response body : %v", resp.StatusCode, err)
 	}
 	// Convert response body from binary to string
-	fmt.Fprintln(os.Stdout, string(body))
-	return nil
+
+	return string(body), nil
 }
 func handleError(err error) {
 	fmt.Fprintln(os.Stderr, "Sorry we cannot get the weather!")
@@ -83,10 +90,10 @@ func handleRateLimited(retryTime string, currentTime time.Time, retries int) err
 	if retrySeconds > 1 && retrySeconds <= 5 && retries < maxRetries {
 		fmt.Printf("We will retry to get you the weather. Please wait %d seconds\n", retrySeconds)
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
+		return nil
 	} else {
 		return fmt.Errorf("internal Error : Failed to retry")
 	}
-	return nil
 }
 
 func convertTime(retryTime string, currentTime time.Time) (int, error) {
