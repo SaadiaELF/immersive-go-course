@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -49,5 +50,35 @@ func TestHandleWeatherRequest_InternalServerError(t *testing.T) {
 	expectedError := fmt.Sprint(errorStatusCode, " : ", errorMessage)
 	if err.Error() != expectedError {
 		t.Errorf("expected error message to be %s, got %s", expectedError, err.Error())
+	}
+}
+
+func TestHandleRateLimited(t *testing.T) {
+	testCases := []int{3, 6, -1}
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Case %d", i+1), func(t *testing.T) {
+			retryAfterHeader := strconv.Itoa(tc)
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Retry-After", retryAfterHeader)
+			}))
+			defer svr.Close()
+
+			err := handleRateLimited(retryAfterHeader, time.Now(), 2)
+			if tc == 3 {
+				if err != nil {
+					t.Errorf("expected err to be nil got %v", err)
+				}
+			}
+			if tc == 6 || tc == -1 {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+
+				expectedError := "internal Error : Failed to retry"
+				if err.Error() != expectedError {
+					t.Errorf("expected error message to be %s, got %s", expectedError, err.Error())
+				}
+			}
+		})
 	}
 }
