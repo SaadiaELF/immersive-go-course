@@ -22,32 +22,14 @@ func main() {
 	for retries := 0; retries < maxRetries; retries++ {
 		resp, err := getWeather(url, client)
 		if err != nil {
-			errorHandler()
-			fmt.Fprintf(os.Stderr, "Failed to get weather: %v\n", err)
+			handleError(err)
 			os.Exit(1)
 		}
 		// Close the response body after been fully read
 		defer resp.Body.Close()
 
-		// Handle cases depending on the Status code of the response
-		switch resp.StatusCode {
-		case 200:
-			handleSuccessResponse(resp)
-			os.Exit(0)
-		case 429:
-			err := handleRateLimited(resp.Header.Get("Retry-After"))
-			if err != nil {
-				errorHandler()
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-		case 500:
-			errorHandler()
-			fmt.Fprintln(os.Stderr, "Internal Server Error")
-			os.Exit(1)
-		default:
-			errorHandler()
-			fmt.Fprintf(os.Stderr, "%v Unexpected Error", resp.StatusCode)
+		if err := handleResponse(resp); err != nil {
+			handleError(err)
 			os.Exit(1)
 		}
 	}
@@ -63,21 +45,33 @@ func getWeather(url string, client *http.Client) (*http.Response, error) {
 	return resp, nil
 }
 
+// Handle cases depending on the Status code of the response
+func handleResponse(resp *http.Response) error {
+	switch resp.StatusCode {
+	case 200:
+		return handleSuccessResponse(resp)
+	case 429:
+		return handleRateLimited(resp.Header.Get("Retry-After"))
+	case 500:
+		return fmt.Errorf("%d : Internal Server Error", resp.StatusCode)
+	default:
+		return fmt.Errorf("%d : Unexpected Error", resp.StatusCode)
+	}
+}
 func handleSuccessResponse(resp *http.Response) error {
 	// Read response body and store it in a var
 	body, err := io.ReadAll(resp.Body)
 	// Show error message if we cannot read the response body
 	if err != nil {
-		return fmt.Errorf("failed to read response body : %v", err)
-		// errorHandler()
-		// fmt.Fprintf(os.Stderr, "Failed to read response body: %v\n", err)
+		return fmt.Errorf("%d : Failed to read response body : %v", resp.StatusCode, err)
 	}
 	// Convert response body from binary to string
 	fmt.Fprintln(os.Stdout, string(body))
 	return nil
 }
-func errorHandler() {
+func handleError(err error) {
 	fmt.Fprintln(os.Stderr, "Sorry we cannot get the weather!")
+	fmt.Fprintf(os.Stderr, "%v\n", err)
 }
 
 // Handle response and retry depending on the Retry-After header
