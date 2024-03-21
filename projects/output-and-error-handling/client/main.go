@@ -16,9 +16,8 @@ const (
 
 func main() {
 	currentTime := time.Now()
-	// Create an HTTP client
 	client := &http.Client{}
-	// This loop will run only if the number of retries doesn't exceed 3
+
 	for retries := 0; retries <= maxRetries; retries++ {
 		response, err := handleWeatherRequest(url, client, currentTime, retries)
 		if err != nil {
@@ -43,16 +42,13 @@ func handleWeatherRequest(url string, client *http.Client, currentTime time.Time
 }
 
 func getWeather(url string, client *http.Client) (*http.Response, error) {
-	// Connect to the server and getting a response
 	resp, err := client.Get(url)
-	// Show error message if connection is not established
 	if err != nil {
 		return nil, fmt.Errorf("failed to make http request: %v", err)
 	}
 	return resp, nil
 }
 
-// Handle cases depending on the Status code of the response
 func handleResponse(resp *http.Response, currentTime time.Time, retries int) (string, error) {
 	switch resp.StatusCode {
 	case 200:
@@ -66,13 +62,10 @@ func handleResponse(resp *http.Response, currentTime time.Time, retries int) (st
 	}
 }
 func handleSuccessResponse(resp *http.Response) (string, error) {
-	// Read response body and store it in a var
 	body, err := io.ReadAll(resp.Body)
-	// Show error message if we cannot read the response body
 	if err != nil {
 		return "", fmt.Errorf("%d : Failed to read response body : %v", resp.StatusCode, err)
 	}
-	// Convert response body from binary to string
 
 	return string(body), nil
 }
@@ -81,7 +74,6 @@ func handleError(err error) {
 	fmt.Fprintf(os.Stderr, "%v\n", err)
 }
 
-// Handle response and retry depending on the Retry-After header
 func handleRateLimited(retryTime string, currentTime time.Time, retries int) error {
 	retrySeconds, err := convertTime(retryTime, currentTime)
 	if err != nil {
@@ -97,7 +89,6 @@ func handleRateLimited(retryTime string, currentTime time.Time, retries int) err
 }
 
 func convertTime(retryTime string, currentTime time.Time) (int, error) {
-
 	if retryTime == http.TimeFormat {
 		httpTime, err := time.Parse(http.TimeFormat, retryTime)
 		if err != nil {
