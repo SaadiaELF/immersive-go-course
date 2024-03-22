@@ -74,7 +74,7 @@ func handleError(err error) {
 }
 
 func handleRateLimited(retryTime string, retries int) error {
-	retrySeconds, err := convertTime(retryTime)
+	retrySeconds, err := convertTime(retryTime, RealTimeProvider{})
 	if err != nil {
 		return err
 	}
@@ -83,30 +83,42 @@ func handleRateLimited(retryTime string, retries int) error {
 		time.Sleep(time.Duration(retrySeconds) * time.Second)
 		return nil
 	} else if retries >= maxRetries {
-		return fmt.Errorf("internal Error : Failed to retry due to exceeded rate limit ")
+		return fmt.Errorf("internal Error : Failed to retry due to exceeded rate limit")
 	} else if retrySeconds > 5 {
-		return fmt.Errorf("internal Error : Failed to retry due to duration limit")
+		return fmt.Errorf("internal Error : Failed to retry due to exceeded duration limit")
 	} else {
 		return fmt.Errorf("internal Error : Failed to retry  for an unknown reason")
 	}
 }
 
-func convertTime(retryTime string) (int, error) {
-	if _, err := time.Parse(http.TimeFormat, retryTime); err == nil {
+type TimeProvider interface {
+	Now() time.Time
+	Until(time.Time) time.Duration
+}
+type RealTimeProvider struct{}
+
+func (r RealTimeProvider) Now() time.Time {
+	return time.Now()
+}
+
+func (r RealTimeProvider) Until(t time.Time) time.Duration {
+	return time.Until(t)
+}
+
+func convertTime(retryTime string, tp TimeProvider) (int, error) {
+	retrySeconds, err := strconv.Atoi(retryTime)
+	if err == nil && retrySeconds != 0 {
+		return retrySeconds, nil
+	} else if _, err := time.Parse(http.TimeFormat, retryTime); err == nil {
 		httpTime, err := time.Parse(http.TimeFormat, retryTime)
 		if err != nil {
-			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format: %w", err)
+			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format")
 		}
-		retrySeconds := int(time.Until(httpTime).Seconds())
+		retrySeconds := int(tp.Until(httpTime).Seconds())
 		return retrySeconds, nil
-	}
-	if retryTime == "a while" {
+	} else if retryTime == "a while" {
 		return 5, nil
 	} else {
-		retrySeconds, err := strconv.Atoi(retryTime)
-		if err != nil {
-			return 0, fmt.Errorf("internal Error: Failed to convert retry time: %w", err)
-		}
-		return retrySeconds, nil
+		return 0, fmt.Errorf("internal Error: Failed to convert retry time")
 	}
 }
