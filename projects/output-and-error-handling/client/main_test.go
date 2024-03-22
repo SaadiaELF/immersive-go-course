@@ -100,10 +100,6 @@ func TestHandleRateLimited(t *testing.T) {
 					t.Errorf("expected err to be nil got %v", err)
 				}
 			} else {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-
 				if err.Error() != tc.expectedError.Error() {
 					t.Errorf("expected error message to be %s, got %s", tc.expectedError, err.Error())
 				}
