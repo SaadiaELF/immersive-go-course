@@ -8,7 +8,16 @@ import (
 	"time"
 )
 
-func TestHandleWeatherRequest_Success(t *testing.T) {
+type testCase struct {
+	retryAfterTime string
+	retries        int
+	expectedValue  int
+	expectedError  error
+	description    string
+}
+type MockTimeProvider struct{}
+
+func TestMakeWeatherRequest_Success(t *testing.T) {
 	expRespSlice := [][]byte{[]byte("Today it will be sunny!"), []byte("Tomorrow it will be rainy!")}
 
 	for i, expected := range expRespSlice {
@@ -31,7 +40,7 @@ func TestHandleWeatherRequest_Success(t *testing.T) {
 	}
 }
 
-func TestHandleWeatherRequest_InternalServerError(t *testing.T) {
+func TestMakeWeatherRequest_InternalServerError(t *testing.T) {
 	errorMessage := "Internal Server Error"
 	errorStatusCode := http.StatusInternalServerError
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +61,56 @@ func TestHandleWeatherRequest_InternalServerError(t *testing.T) {
 	}
 }
 
-type MockTimeProvider struct{}
+func TestHandleRateLimited(t *testing.T) {
+	testCases := []testCase{
+		{
+			retryAfterTime: "3",
+			retries:        2,
+			expectedValue:  3,
+			expectedError:  nil,
+			description:    "Success",
+		},
+		{
+			retryAfterTime: "3",
+			retries:        4,
+			expectedValue:  3,
+			expectedError:  fmt.Errorf("internal Error : Failed to retry due to exceeded rate limit"),
+			description:    "Failure - Exceed rate limit",
+		},
+		{
+			retryAfterTime: "6",
+			retries:        2,
+			expectedValue:  6,
+			expectedError:  fmt.Errorf("internal Error : Failed to retry due to exceeded duration limit"),
+			description:    "Failure - Exceed duration limit",
+		},
+		{
+			retryAfterTime: "1",
+			retries:        2,
+			expectedValue:  1,
+			expectedError:  fmt.Errorf("internal Error : Failed to retry  for an unknown reason"),
+			description:    "Failure - Unknown reason",
+		},
+	}
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Case %d %s", i+1, tc.description), func(t *testing.T) {
+			err := handleRateLimited(tc.retryAfterTime, tc.retries)
+			if tc.expectedError == nil {
+				if err != nil {
+					t.Errorf("expected err to be nil got %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+
+				if err.Error() != tc.expectedError.Error() {
+					t.Errorf("expected error message to be %s, got %s", tc.expectedError, err.Error())
+				}
+			}
+		})
+	}
+}
 
 func (m MockTimeProvider) Now() time.Time {
 	return time.Date(2024, time.March, 22, 12, 0, 0, 0, time.UTC)
@@ -64,46 +122,35 @@ func (m MockTimeProvider) Until(t time.Time) time.Duration {
 
 func TestConvertTime(t *testing.T) {
 	tp := MockTimeProvider{}
-	type testCase struct {
-		retryAfterTime string
-		expectedValue  int
-		expectedError  error
-	}
 
 	testCases := []testCase{
 		{
 			retryAfterTime: "3",
 			expectedValue:  3,
 			expectedError:  nil,
-		},
-		{
-			retryAfterTime: "6",
-			expectedValue:  6,
-			expectedError:  nil,
+			description:    "Success - Integer numbers of seconds",
 		},
 		{
 			retryAfterTime: (tp.Now().Add(3 * time.Second)).Format(http.TimeFormat),
 			expectedValue:  3,
 			expectedError:  nil,
-		},
-		{
-			retryAfterTime: (tp.Now().Add(6 * time.Second)).Format(http.TimeFormat),
-			expectedValue:  6,
-			expectedError:  nil,
+			description:    "Success - Timestamps",
 		},
 		{
 			retryAfterTime: "a while",
 			expectedValue:  5,
 			expectedError:  nil,
+			description:    "Success - A while",
 		},
 		{
 			retryAfterTime: "Invalid Format",
 			expectedValue:  0,
 			expectedError:  fmt.Errorf("internal Error: Failed to convert retry time"),
+			description:    "Failure - Invalid Format",
 		},
 	}
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Case %d", i+1), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Case %d %s", i+1, tc.description), func(t *testing.T) {
 
 			seconds, err := convertTime(tc.retryAfterTime, tp)
 			if tc.expectedError == nil {
