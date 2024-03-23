@@ -6,9 +6,11 @@ import (
 )
 
 func Execute() {
-	arg := "."
+	var arg string
 	if len(os.Args) > 1 {
 		arg = os.Args[1]
+	} else {
+		arg, _ = os.Getwd()
 	}
 	if arg == "-h" {
 		fmt.Println("go-ls : list directory contents")
