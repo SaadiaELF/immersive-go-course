@@ -6,22 +6,25 @@ import (
 )
 
 func Execute() {
-	path := "."
+	arg := "."
 	if len(os.Args) > 1 {
-		path = os.Args[1]
+		arg = os.Args[1]
 	}
-
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		fdopendir := fmt.Sprintf("fdopendir %s: not a directory", path)
-		if err.Error() == fdopendir {
-			fmt.Println(path)
-		} else {
-			fmt.Println(err)
+	if arg == "-h" {
+		fmt.Println("go-ls : list directory contents")
+	} else {
+		entries, err := os.ReadDir(arg)
+		if err != nil {
+			fdopendir := fmt.Sprintf("fdopendir %s: not a directory", arg)
+			if err.Error() == fdopendir {
+				fmt.Println(arg)
+			} else {
+				fmt.Println(err)
+			}
+			return
 		}
-		return
-	}
-	for _, entry := range entries {
-		fmt.Println(entry.Name())
+		for _, entry := range entries {
+			fmt.Println(entry.Name())
+		}
 	}
 }
