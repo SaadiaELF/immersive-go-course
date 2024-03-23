@@ -10,10 +10,10 @@ func Execute() {
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	}
-	// Read directory all entries
+	
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		fmt.Printf("Error reading directory: %v\n", err)
+		fmt.Println(path)
 		return
 	}
 	for _, entry := range entries {
