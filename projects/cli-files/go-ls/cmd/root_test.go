@@ -16,8 +16,8 @@ func Test_GetCurrentPath(t *testing.T) {
 		description string
 	}{
 		{
-			path:        []string{"cmd", "./assets"},
-			expected:    "./assets",
+			path:        []string{"cmd", "assets"},
+			expected:    "assets",
 			description: "Argument is provided",
 		},
 		{
@@ -34,8 +34,4 @@ func Test_GetCurrentPath(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_Listcontent(t *testing.T) {
-
 }
