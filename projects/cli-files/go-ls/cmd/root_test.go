@@ -7,15 +7,14 @@ import (
 )
 
 // go-ls tests
-type testCase struct {
-	path        []string
-	expected    string
-	description string
-}
 
 func Test_GetCurrentPath(t *testing.T) {
-	expected, _ := os.Getwd()
-	testCases := []testCase{
+	expectedPath, _ := os.Getwd()
+	testCases := []struct {
+		path        []string
+		expected    string
+		description string
+	}{
 		{
 			path:        []string{"cmd", "./assets"},
 			expected:    "./assets",
@@ -23,7 +22,7 @@ func Test_GetCurrentPath(t *testing.T) {
 		},
 		{
 			path:        []string{"cmd"},
-			expected:    expected,
+			expected:    expectedPath,
 			description: "Argument is not provided",
 		},
 	}
@@ -35,4 +34,8 @@ func Test_GetCurrentPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Listcontent(t *testing.T) {
+
 }
