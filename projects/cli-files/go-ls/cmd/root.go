@@ -6,9 +6,15 @@ import (
 	"os"
 )
 
+func Execute() {
+	addFlag()
+	listContent()
+}
+
 func boldText(s string) string {
 	return fmt.Sprintf("\033[1m%s\033[0m", s)
 }
+
 func init() {
 	flag.Usage = func() {
 		fmt.Printf("%s\n%s\n	go-ls - list directory content\n%s\n	go-ls [path] || go-ls [options]\n", boldText("Usage of go-ls"), boldText("Name:"), boldText("Format:"))
@@ -17,37 +23,37 @@ func init() {
 		flag.PrintDefaults()
 	}
 }
-
-func Execute() {
-	var path string
-
+func addFlag() {
 	h := flag.Bool("h", false, "show description and usage")
 	flag.Parse()
-
 	if *h {
 		flag.Usage()
 		return
 	}
-
-	if len(os.Args) > 1 {
-		path = os.Args[1]
-	} else {
-		path, _ = os.Getwd()
-	}
-
+}
+func listContent() {
+	path := getCurrentPath()
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		fdopendir := fmt.Sprintf("fdopendir %s: not a directory", path)
-		if err.Error() == fdopendir {
-			fmt.Println(path)
-		} else {
-			fmt.Println(err)
-		}
-		return
+		handleErrors(err, path)
 	}
 	for _, entry := range entries {
 		fmt.Println(entry.Name())
 	}
 }
-
-// }
+func getCurrentPath() string {
+	if len(os.Args) > 1 {
+		return os.Args[1]
+	} else {
+		path, _ := os.Getwd()
+		return path
+	}
+}
+func handleErrors(err error, path string) {
+	fdopendir := fmt.Sprintf("fdopendir %s: not a directory", path)
+	if err.Error() == fdopendir {
+		fmt.Println(path)
+	} else {
+		fmt.Println(err)
+	}
+}
