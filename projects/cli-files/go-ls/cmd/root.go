@@ -1,13 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"syscall"
 )
 
 func Execute() {
-	addFlag()
+	defer addFlag()
 	listContent()
 }
 
@@ -50,8 +52,7 @@ func getCurrentPath() string {
 	}
 }
 func handleErrors(err error, path string) {
-	fdopendir := fmt.Sprintf("fdopendir %s: not a directory", path)
-	if err.Error() == fdopendir {
+	if errors.Is(err, syscall.ENOTDIR) {
 		fmt.Println(path)
 	} else {
 		fmt.Println(err)
