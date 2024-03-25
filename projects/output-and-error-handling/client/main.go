@@ -18,7 +18,7 @@ func main() {
 	client := &http.Client{}
 
 	for retries := 0; retries <= maxRetries; retries++ {
-		response, err := makeWeatherRequest(url, client, retries)
+		response, err := makeWeatherRequest(client, url, retries)
 		if err != nil {
 			handleError(err)
 			os.Exit(1)
@@ -30,8 +30,8 @@ func main() {
 	}
 }
 
-func makeWeatherRequest(url string, client *http.Client, retries int) (string, error) {
-	resp, err := getWeather(url, client)
+func makeWeatherRequest(client *http.Client, url string, retries int) (string, error) {
+	resp, err := getWeather(client, url)
 	if err != nil {
 		return "", fmt.Errorf("failed to get weather: %w", err)
 	}
@@ -40,7 +40,7 @@ func makeWeatherRequest(url string, client *http.Client, retries int) (string, e
 	return handleResponse(resp, retries)
 }
 
-func getWeather(url string, client *http.Client) (*http.Response, error) {
+func getWeather(client *http.Client, url string) (*http.Response, error) {
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make http request: %w", err)
@@ -74,19 +74,20 @@ func handleError(err error) {
 }
 
 func handleRateLimited(retryTime string, retries int) error {
-	retrySeconds, err := convertTime(retryTime, RealTimeProvider{})
+	retryDuration, err := convertTime(RealTimeProvider{}, retryTime)
 	if err != nil {
 		return err
 	}
-	if retrySeconds > 1 && retrySeconds <= 5 && retries < maxRetries {
-		fmt.Printf("We will retry to get you the weather. Please wait %d seconds\n", retrySeconds)
-		time.Sleep(time.Duration(retrySeconds) * time.Second)
+	switch {
+	case retryDuration > 1*time.Second && retryDuration <= 5*time.Second && retries < maxRetries:
+		fmt.Printf("We will retry to get you the weather. Please wait %v.\n", retryDuration)
+		time.Sleep(retryDuration)
 		return nil
-	} else if retries >= maxRetries {
+	case retries >= maxRetries:
 		return fmt.Errorf("internal Error : Failed to retry due to exceeded rate limit")
-	} else if retrySeconds > 5 {
+	case retryDuration > 5*time.Second:
 		return fmt.Errorf("internal Error : Failed to retry due to exceeded duration limit")
-	} else {
+	default:
 		return fmt.Errorf("internal Error : Failed to retry  for an unknown reason")
 	}
 }
@@ -105,19 +106,20 @@ func (r RealTimeProvider) Until(t time.Time) time.Duration {
 	return time.Until(t)
 }
 
-func convertTime(retryTime string, tp TimeProvider) (int, error) {
-	retrySeconds, err := strconv.Atoi(retryTime)
-	if err == nil && retrySeconds != 0 {
-		return retrySeconds, nil
+func convertTime(tp TimeProvider, retryTime string) (time.Duration, error) {
+	secondsInt, err := strconv.Atoi(retryTime)
+	if err == nil && secondsInt != 0 {
+		retryDuration := time.Duration(secondsInt) * time.Second
+		return retryDuration, nil
 	} else if _, err := time.Parse(http.TimeFormat, retryTime); err == nil {
 		httpTime, err := time.Parse(http.TimeFormat, retryTime)
 		if err != nil {
 			return 0, fmt.Errorf("internal Error: error parsing HTTP Time Format")
 		}
-		retrySeconds := int(tp.Until(httpTime).Seconds())
-		return retrySeconds, nil
+		retryDuration := tp.Until(httpTime)
+		return retryDuration, nil
 	} else if retryTime == "a while" {
-		return 5, nil
+		return 5 * time.Second, nil
 	} else {
 		return 0, fmt.Errorf("internal Error: Failed to convert retry time")
 	}
