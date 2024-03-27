@@ -7,9 +7,9 @@ func Execute() {
 	fmt.Println(args)
 }
 
-func checkArgs(args []string) (output string) {
+func checkArgs(args []string) (err error) {
 	if len(args) == 0 {
-		output = "error: no file specified"
+		err = fmt.Errorf("error: no file specified")
 	}
-	return output
+	return err
 }
