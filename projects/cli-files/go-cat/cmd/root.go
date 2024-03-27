@@ -11,16 +11,18 @@ func Execute() {
 	fmt.Println(checkArgs(args))
 }
 
-func checkArgs(args []string) (err error) {
-
+func checkArgs(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("error: no file specified")
+	}
 	if len(args) == 1 {
-		fileInfo, _ := os.Stat(args[0])
+		fileInfo, err := os.Stat(args[0])
+		if err != nil {
+			return fmt.Errorf("error: '%s': no such file or directory", args[0])
+		}
 		if fileInfo.IsDir() {
-			err = fmt.Errorf("error: '%s': is a directory", args[0])
+			return fmt.Errorf("error: '%s': is a directory", args[0])
 		}
 	}
-	if len(args) == 0 {
-		err = fmt.Errorf("error: no file specified")
-	}
-	return err
+	return nil
 }
