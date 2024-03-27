@@ -23,7 +23,6 @@ func Execute() {
 		for _, fileLine := range fileLines {
 			fmt.Print(fileLine)
 		}
-		fmt.Print("\n")
 	}
 }
 
@@ -58,6 +57,7 @@ func readFileLines(filePath string) ([]string, error) {
 			if err != io.EOF {
 				return nil, err
 			}
+			fileLines = append(fileLines, "\n")
 			break
 		}
 		fileLines = append(fileLines, string(buffer[0:n]))
