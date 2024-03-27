@@ -7,8 +7,11 @@ import (
 
 func Execute() {
 	args := os.Args[1:]
-	checkArgs(args)
-	fmt.Println(checkArgs(args))
+	err := checkArgs(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
 }
 
 func checkArgs(args []string) error {
