@@ -33,5 +33,10 @@ func TestDirectoryPath(t *testing.T) {
 			require.Equal(t, "error: '"+tc.args[0]+"': is a directory", err.Error())
 		})
 	}
+}
 
+// cat [non-existent-file-path] displays error message : [non-existent-file-path]: no such file or directory
+func TestNonExistentFilePath(t *testing.T) {
+	err := checkArgs([]string{"non-existent-file-path"})
+	require.Equal(t, "error: 'non-existent-file-path': no such file or directory", err.Error())
 }
