@@ -50,8 +50,8 @@ func createTempFile() string {
 func TestValidFilePath(t *testing.T) {
 	fileName := createTempFile()
 	defer os.Remove(fileName)
+
 	fileLines, err := readFileLines(fileName)
 	require.NoError(t, err)
 	require.Equal(t, []string{"file contents", "\n"}, fileLines)
-
 }
