@@ -20,3 +20,18 @@ func TestNoFileSpecified(t *testing.T) {
 	err := checkArgs([]string{})
 	require.Equal(t, err.Error(), "error: no file specified")
 }
+
+// cat [directory-path] displays error message : [directory-path] is a directory
+func TestDirectoryPath(t *testing.T) {
+	testCases := []struct {
+		name string
+		args []string
+	}{{name: "current directory", args: []string{"."}}, {name: "directory path", args: []string{"../../assets"}}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkArgs(tc.args)
+			require.Equal(t, "error: '"+tc.args[0]+"': is a directory", err.Error())
+		})
+	}
+
+}
