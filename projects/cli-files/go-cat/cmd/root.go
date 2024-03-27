@@ -9,37 +9,39 @@ import (
 
 func Execute() {
 	args := os.Args[1:]
-	err := checkArgs(args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	fileLines, err := readFile(args[0])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	for _, fileLine := range fileLines {
-		fmt.Print(fileLine)
+
+	for _, arg := range args {
+		err := checkArgs(arg)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		fileLines, err := readFileLines(arg)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		for _, fileLine := range fileLines {
+			fmt.Print(fileLine)
+		}
+		fmt.Print("\n")
 	}
 }
 
-func checkArgs(args []string) error {
-	if len(args) == 0 {
+func checkArgs(arg string) error {
+	if arg == "" {
 		return fmt.Errorf("error: no file specified")
 	}
-	if len(args) == 1 {
-		fileInfo, err := os.Stat(args[0])
-		if err != nil {
-			return fmt.Errorf("error: '%s': no such file or directory", args[0])
-		}
-		if fileInfo.IsDir() {
-			return fmt.Errorf("error: '%s': is a directory", args[0])
-		}
+	fileInfo, err := os.Stat(arg)
+	if err != nil {
+		return fmt.Errorf("error: '%s': no such file or directory", arg)
+	}
+	if fileInfo.IsDir() {
+		return fmt.Errorf("error: '%s': is a directory", arg)
 	}
 	return nil
 }
 
-func readFile(filePath string) ([]string, error) {
+func readFileLines(filePath string) ([]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -49,6 +51,7 @@ func readFile(filePath string) ([]string, error) {
 	reader := bufio.NewReader(file)
 	buffer := make([]byte, 16)
 	fileLines := []string{}
+
 	for {
 		n, err := reader.Read(buffer)
 		if err != nil {
