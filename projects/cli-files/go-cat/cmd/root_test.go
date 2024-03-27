@@ -1,15 +1,14 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// cat [file-path] displays the content of a file
-// cat [directory-path] displays error message : [directory-path] is a directory
 // cat [file-path] [file-path] displays the content of both files
-// cat no ARG displays error message : no file specified
 // Extra test cases:
 // cat [file-path] [directory-path] displays error message : [directory-path] is a directory
 // cat [file-path] [non-existent-file-path] displays error message : [non-existent-file-path]: no such file or directory
@@ -39,4 +38,25 @@ func TestDirectoryPath(t *testing.T) {
 func TestNonExistentFilePath(t *testing.T) {
 	err := checkArgs([]string{"non-existent-file-path"})
 	require.Equal(t, "error: 'non-existent-file-path': no such file or directory", err.Error())
+}
+
+func createTempFile() string {
+	file, err := os.CreateTemp(".", "temp.txt")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	_, err = file.WriteString("file contents") // less than 16 bytes
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	return file.Name()
+}
+
+// cat [file-path] displays the content of a file
+func TestValidFilePath(t *testing.T) {
+	fileName := createTempFile()
+	fileLines, err := readFile(fileName)
+	require.NoError(t, err)
+	require.Equal(t, []string{"file contents"}, fileLines)
+	defer os.Remove(fileName)
 }
