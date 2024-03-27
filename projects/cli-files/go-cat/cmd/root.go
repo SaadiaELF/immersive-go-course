@@ -28,14 +28,14 @@ func Execute() {
 
 func checkArgs(arg string) error {
 	if arg == "" {
-		return fmt.Errorf("error: no file specified")
+		return fmt.Errorf("go-cat: no file specified")
 	}
 	fileInfo, err := os.Stat(arg)
 	if err != nil {
-		return fmt.Errorf("error: '%s': no such file or directory", arg)
+		return fmt.Errorf("go-cat: '%s': no such file or directory", arg)
 	}
 	if fileInfo.IsDir() {
-		return fmt.Errorf("error: '%s': is a directory", arg)
+		return fmt.Errorf("go-cat: '%s': is a directory", arg)
 	}
 	return nil
 }
