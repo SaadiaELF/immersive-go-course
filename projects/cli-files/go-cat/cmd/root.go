@@ -33,7 +33,7 @@ func checkArgs(arg string) error {
 	}
 	fileInfo, err := os.Stat(arg)
 	if err != nil {
-		return fmt.Errorf("go-cat: '%s': no such file or directory", arg)
+		return fmt.Errorf("go-cat: %w", err)
 	}
 	if fileInfo.IsDir() {
 		return fmt.Errorf("go-cat: '%s': is a directory", arg)

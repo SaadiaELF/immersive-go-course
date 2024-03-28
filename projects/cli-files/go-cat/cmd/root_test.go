@@ -31,7 +31,7 @@ func TestDirectoryPath(t *testing.T) {
 // cat [non-existent-file-path] displays error message : [non-existent-file-path]: no such file or directory
 func TestNonExistentFilePath(t *testing.T) {
 	err := checkArgs("/non-existent-file-path")
-	require.Equal(t, "go-cat: '/non-existent-file-path': no such file or directory", err.Error())
+	require.Equal(t, "go-cat: stat /non-existent-file-path: no such file or directory", err.Error())
 }
 
 func createTempFile() string {
