@@ -50,5 +50,5 @@ func TestValidFilePath(t *testing.T) {
 
 	fileLines, err := readFileLines(fileName)
 	require.NoError(t, err)
-	require.Equal(t, []string{"file contents", "\n"}, fileLines)
+	require.Equal(t, []string{"file contents"}, fileLines)
 }
