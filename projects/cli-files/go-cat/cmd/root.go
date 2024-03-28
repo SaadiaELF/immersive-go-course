@@ -14,11 +14,12 @@ func Execute() {
 		err := checkArgs(arg)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return
+			os.Exit(1)
 		}
 		fileLines, err := readFileLines(arg)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 		for _, fileLine := range fileLines {
 			fmt.Print(fileLine)
