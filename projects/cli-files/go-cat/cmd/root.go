@@ -11,34 +11,15 @@ func Execute() {
 	args := os.Args[1:]
 
 	for _, arg := range args {
-		err := checkArgs(arg)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
 		fileLines, err := readFileLines(arg)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "go-cat:", err)
 			os.Exit(1)
 		}
 		for _, fileLine := range fileLines {
 			fmt.Print(fileLine)
 		}
 	}
-}
-
-func checkArgs(arg string) error {
-	if arg == "" {
-		return fmt.Errorf("go-cat: no file specified")
-	}
-	fileInfo, err := os.Stat(arg)
-	if err != nil {
-		return fmt.Errorf("go-cat: %w", err)
-	}
-	if fileInfo.IsDir() {
-		return fmt.Errorf("go-cat: '%s': is a directory", arg)
-	}
-	return nil
 }
 
 func readFileLines(filePath string) ([]string, error) {
