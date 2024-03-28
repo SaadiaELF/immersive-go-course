@@ -39,7 +39,7 @@ func readFileLines(filePath string) ([]string, error) {
 			if err != io.EOF {
 				return nil, err
 			}
-			if n == 0 {
+			if n == 0 && err == io.EOF {
 				break
 			}
 		}
