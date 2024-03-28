@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -24,25 +23,29 @@ func TestDirectoryPath(t *testing.T) {
 
 // cat [non-existent-file-path] displays error message : [non-existent-file-path]: no such file or directory
 func TestNonExistentFilePath(t *testing.T) {
-	_, err := readFileLines("/non-existent-file-path")
-	require.Equal(t, "open /non-existent-file-path: no such file or directory", err.Error())
+	fileName, err := createTempFile()
+	require.NoError(t, err)
+	os.Remove(fileName)
+	_, err = readFileLines(fileName)
+	require.Equal(t, "open "+fileName+": no such file or directory", err.Error())
 }
 
-func createTempFile() string {
+func createTempFile() (string, error) {
 	file, err := os.CreateTemp(".", "temp.txt")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		return "", err
 	}
 	_, err = file.WriteString("file contents") // less than 16 bytes
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		return "", err
 	}
-	return file.Name()
+	return file.Name(), nil
 }
 
 // cat [file-path] displays the content of a file
 func TestValidFilePath(t *testing.T) {
-	fileName := createTempFile()
+	fileName, err := createTempFile()
+	require.NoError(t, err)
 	defer os.Remove(fileName)
 
 	fileLines, err := readFileLines(fileName)
