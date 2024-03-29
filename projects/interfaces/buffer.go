@@ -1,4 +1,6 @@
-package main
+package OurBuffer
+
+// import "bytes"
 
 type OurByteBuffer struct {
 	bytes []byte
@@ -29,8 +31,4 @@ func (b *OurByteBuffer) Read(p []byte) (n int) {
 
 func (b *OurByteBuffer) String() string {
 	return string(b.bytes)
-}
-
-func main() {
-
 }
