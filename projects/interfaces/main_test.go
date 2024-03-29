@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,7 +41,7 @@ func TestBufferReadFullSlice(t *testing.T) {
 // If you call b.Read() with a slice smaller than the contents of the buffer, some of the bytes are read. If you call it again, the next bytes are read.
 func TestBufferReadPartialSlices(t *testing.T) {
 	inputBytes := []byte("Hello, World!")
-	b := bytes.NewBuffer(inputBytes)
+	b := NewBuffer(inputBytes)
 
 	outputBytes := make([]byte, 7)
 	b.Read(outputBytes)
