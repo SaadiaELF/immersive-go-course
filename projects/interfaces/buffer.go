@@ -1,5 +1,7 @@
 package OurBuffer
 
+import "io"
+
 type OurByteBuffer struct {
 	bytes []byte
 }
@@ -18,14 +20,20 @@ func (b *OurByteBuffer) Write(p []byte) (n int, err error) {
 }
 
 func (b *OurByteBuffer) Read(p []byte) (n int, err error) {
-	if len(p) >= len(b.bytes) {
-		b.bytes = b.bytes[len(b.bytes):]
-		copy(p, b.bytes)
+	n = len(p)
+	if n > len(b.bytes) {
+		n = len(b.bytes)
 	}
-	if len(p) < len(b.bytes) {
-		b.bytes = b.bytes[len(p):]
+
+	copy(p, b.bytes[:n])
+	
+	b.bytes = b.bytes[n:]
+
+	if len(b.bytes) == 0 {
+		err = io.EOF
 	}
-	return len(p), nil
+
+	return n, err
 }
 
 func (b *OurByteBuffer) String() string {
