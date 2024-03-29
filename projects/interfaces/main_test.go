@@ -13,12 +13,10 @@ import (
 
 // If you make a buffer named b containing some bytes, calling b.Bytes() returns the same bytes you created it with.
 func TestBytesMethod(t *testing.T) {
-	// Create a buffer named b containing some bytes.
-	var b bytes.Buffer
-	n, _ := b.Write([]byte("Hello, World!"))
-	// Call b.Bytes() and check that it returns the same bytes you created it with.
+	inputBytes := []byte("Hello, World!")
+	b := bytes.NewBuffer(inputBytes)
+
 	bytes := b.Bytes()
 
-	require.Equal(t, n, len(bytes))
-
+	require.Equal(t, len(inputBytes), len(bytes))
 }
