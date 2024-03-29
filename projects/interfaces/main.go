@@ -18,8 +18,17 @@ func (b *OurByteBuffer) Write(p []byte) (n int) {
 }
 
 func (b *OurByteBuffer) Read(p []byte) (n int) {
-	b.bytes = b.bytes[0:len(p)]
-	return len(p)
+	if len(p) > len(b.bytes) {
+		b.bytes = b.bytes[len(b.bytes):]
+		return len(b.bytes)
+	} else {
+		b.bytes = b.bytes[len(p):]
+		return len(p)
+	}
+}
+
+func (b *OurByteBuffer) String() string {
+	return string(b.bytes)
 }
 
 func main() {
