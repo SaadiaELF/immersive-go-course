@@ -12,19 +12,20 @@ func (b *OurByteBuffer) Bytes() []byte {
 	return b.bytes
 }
 
-func (b *OurByteBuffer) Write(p []byte) (n int) {
+func (b *OurByteBuffer) Write(p []byte) (n int, err error) {
 	b.bytes = append(b.bytes, p...)
-	return len(p)
+	return len(p), nil
 }
 
-func (b *OurByteBuffer) Read(p []byte) (n int) {
-	if len(p) > len(b.bytes) {
+func (b *OurByteBuffer) Read(p []byte) (n int, err error) {
+	if len(p) >= len(b.bytes) {
 		b.bytes = b.bytes[len(b.bytes):]
-		return len(b.bytes)
-	} else {
-		b.bytes = b.bytes[len(p):]
-		return len(p)
+		copy(p, b.bytes)
 	}
+	if len(p) < len(b.bytes) {
+		b.bytes = b.bytes[len(p):]
+	}
+	return len(p), nil
 }
 
 func (b *OurByteBuffer) String() string {
