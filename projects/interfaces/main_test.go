@@ -10,7 +10,7 @@ import (
 // If you make a buffer named b containing some bytes, calling b.Bytes() returns the same bytes you created it with.
 func TestBufferBytesReturnsInitialBytes(t *testing.T) {
 	inputBytes := []byte("Hello, World!")
-	b := bytes.NewBuffer(inputBytes)
+	b := NewBuffer(inputBytes)
 
 	bytes := b.Bytes()
 
