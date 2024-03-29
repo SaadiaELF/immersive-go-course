@@ -29,3 +29,14 @@ func TestBufferWriteExtraBytes(t *testing.T) {
 
 	require.Equal(t, len(inputBytes)+n, len(bytes))
 }
+
+// If you call b.Read() with a slice big enough to read all of the bytes in the buffer, all of the bytes are read.
+func TestBufferReadFullSlice(t *testing.T) {
+	inputBytes := []byte("Hello, World!")
+	b := bytes.NewBuffer(inputBytes)
+
+	outputBytes := make([]byte, len(inputBytes))
+	n, _ := b.Read(outputBytes)
+
+	require.Equal(t, len(inputBytes), n)
+}
