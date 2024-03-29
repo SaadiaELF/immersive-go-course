@@ -1,7 +1,5 @@
 package OurBuffer
 
-// import "bytes"
-
 type OurByteBuffer struct {
 	bytes []byte
 }
