@@ -20,8 +20,8 @@ func TestBufferBytesReturnsInitialBytes(t *testing.T) {
 // If you write some extra bytes to that buffer using b.Write(), a call to b.Bytes() returns both the initial bytes and the extra bytes.
 func TestBufferWriteExtraBytes(t *testing.T) {
 	inputBytes := []byte("Hello ")
-	b := bytes.NewBuffer(inputBytes)
-	n, _ := b.Write([]byte("World!"))
+	b := NewBuffer(inputBytes)
+	n := b.Write([]byte("World!"))
 
 	bytes := b.Bytes()
 
