@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// If you call b.Read() with a slice smaller than the contents of the buffer, some of the bytes are read. If you call it again, the next bytes are read.
-
 // If you make a buffer named b containing some bytes, calling b.Bytes() returns the same bytes you created it with.
 func TestBufferBytesReturnsInitialBytes(t *testing.T) {
 	inputBytes := []byte("Hello, World!")
@@ -39,4 +37,16 @@ func TestBufferReadFullSlice(t *testing.T) {
 	n, _ := b.Read(outputBytes)
 
 	require.Equal(t, len(inputBytes), n)
+}
+
+// If you call b.Read() with a slice smaller than the contents of the buffer, some of the bytes are read. If you call it again, the next bytes are read.
+func TestBufferReadPartialSlices(t *testing.T) {
+	inputBytes := []byte("Hello, World!")
+	b := bytes.NewBuffer(inputBytes)
+
+	outputBytes := make([]byte, 7)
+	b.Read(outputBytes)
+	require.Equal(t, b.String(), "World!")
+	b.Read(outputBytes)
+	require.Equal(t, b.String(), "")
 }
