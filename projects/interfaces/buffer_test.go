@@ -20,7 +20,7 @@ func TestBufferBytesReturnsInitialBytes(t *testing.T) {
 func TestBufferWriteExtraBytes(t *testing.T) {
 	inputBytes := []byte("Hello ")
 	b := NewBuffer(inputBytes)
-	n := b.Write([]byte("World!"))
+	n, _ := b.Write([]byte("World!"))
 
 	bytes := b.Bytes()
 
@@ -33,7 +33,7 @@ func TestBufferReadFullSlice(t *testing.T) {
 	b := NewBuffer(inputBytes)
 
 	outputBytes := make([]byte, len(inputBytes))
-	n := b.Read(outputBytes)
+	n, _ := b.Read(outputBytes)
 
 	require.Equal(t, len(inputBytes), n)
 }
