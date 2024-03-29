@@ -17,6 +17,11 @@ func (b *OurByteBuffer) Write(p []byte) (n int) {
 	return len(p)
 }
 
+func (b *OurByteBuffer) Read(p []byte) (n int) {
+	b.bytes = b.bytes[0:len(p)]
+	return len(p)
+}
+
 func main() {
 
 }
