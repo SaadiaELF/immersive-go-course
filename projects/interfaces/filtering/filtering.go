@@ -13,7 +13,13 @@ func NewFilteringPipe(w io.Writer) io.Writer {
 }
 
 func (f filteringPipe) Write(p []byte) (n int, err error) {
-	n, err = f.fw.Write(p)
+	filtered := []byte{}
+	for _, value := range p {
+		if value < '0' || value > '9' {
+			filtered = append(filtered, value)
+		}
+	}
+	n, err = f.fw.Write(filtered)
 	if err != nil {
 		return n, err
 	}
