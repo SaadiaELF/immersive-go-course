@@ -9,7 +9,7 @@ type filteringPipe struct {
 }
 
 func NewFilteringPipe(w io.Writer) io.Writer {
-	return &filteringPipe{fw: w}
+	return filteringPipe{fw: w}
 }
 
 func (f filteringPipe) Write(p []byte) (n int, err error) {
