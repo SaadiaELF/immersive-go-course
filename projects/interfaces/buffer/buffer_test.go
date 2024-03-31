@@ -25,13 +25,16 @@ func TestBufferWriteExtraBytes(t *testing.T) {
 	inputBytes := []byte("Hello ")
 	b := NewBuffer(inputBytes)
 	n, err := b.Write([]byte("World!"))
+
 	require.NoError(t, err)
+	require.Equal(t, 6, n)
 
 	bytes := b.Bytes()
-	expected := string((bytes))
-	actual := string(inputBytes) + "World!"
-	require.Equal(t, expected, actual)
-	require.Equal(t, len(bytes), len(inputBytes)+n)
+
+	excepted := "Hello World!"
+	actual := string(bytes)
+
+	require.Equal(t, excepted, actual)
 }
 
 // If you call b.Read() with a slice big enough to read all of the bytes in the buffer, all of the bytes are read.
@@ -41,10 +44,12 @@ func TestBufferReadFullSlice(t *testing.T) {
 
 	outputBytes := make([]byte, len(inputBytes))
 	n, err := b.Read(outputBytes)
+
 	require.ErrorAs(t, err, &io.EOF)
 
 	expected := string(inputBytes)
 	actual := string(outputBytes)
+
 	require.Equal(t, expected, actual)
 	require.Equal(t, len(inputBytes), n)
 }
