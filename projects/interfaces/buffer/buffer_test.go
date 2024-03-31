@@ -76,3 +76,16 @@ func TestBufferReadPartialSlices(t *testing.T) {
 		require.Equal(t, 6, n)
 	})
 }
+
+// If you call b.Read() with a slice bigger than the contents of the buffer, only the bytes in the buffer are read.
+func TestBufferReadBiggerSlice(t *testing.T) {
+	inputBytes := []byte("Hello, World!")
+	b := NewBuffer(inputBytes)
+
+	outputBytes := make([]byte, 20)
+	n, err := b.Read(outputBytes)
+
+	require.ErrorAs(t, err, &io.EOF)
+	require.Equal(t, "Hello, World!", string(outputBytes[:len(inputBytes)]))
+	require.Equal(t, len(inputBytes), n)
+}
