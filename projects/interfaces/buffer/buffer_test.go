@@ -59,8 +59,8 @@ func TestBufferReadPartialSlices(t *testing.T) {
 	inputBytes := []byte("Hello, World!")
 	b := NewBuffer(inputBytes)
 
-	outputBytes := make([]byte, 7)
 	t.Run("first read", func(t *testing.T) {
+		outputBytes := make([]byte, 7)
 		n, err := b.Read(outputBytes)
 		require.NoError(t, err)
 		require.Equal(t, "World!", b.String())
@@ -69,10 +69,11 @@ func TestBufferReadPartialSlices(t *testing.T) {
 	})
 
 	t.Run("Second Read", func(t *testing.T) {
+		outputBytes := make([]byte, 7)
 		n, err := b.Read(outputBytes)
 		require.ErrorAs(t, err, &io.EOF)
 		require.Equal(t, b.String(), "")
-		require.Equal(t, "World! ", string(outputBytes))
+		require.Equal(t, "World!", string(outputBytes[:n]))
 		require.Equal(t, 6, n)
 	})
 }
@@ -86,6 +87,6 @@ func TestBufferReadBiggerSlice(t *testing.T) {
 	n, err := b.Read(outputBytes)
 
 	require.ErrorAs(t, err, &io.EOF)
-	require.Equal(t, "Hello, World!", string(outputBytes[:len(inputBytes)]))
+	require.Equal(t, "Hello, World!", string(outputBytes[:n]))
 	require.Equal(t, len(inputBytes), n)
 }
