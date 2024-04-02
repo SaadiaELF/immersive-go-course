@@ -13,7 +13,7 @@ type Player struct {
 
 type Players []Player
 
-func ParseJSON(filename string) (players Players, err error) {
+func JSONParser(filename string) (players Players, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
