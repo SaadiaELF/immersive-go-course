@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	jsonparser "github.com/CodeYourFuture/immersive-go-course/projects/file-parsing/fileparser"
+	jsonparser "github.com/CodeYourFuture/immersive-go-course/projects/file-parsing/fileparser/json"
 	"github.com/stretchr/testify/require"
 )
 

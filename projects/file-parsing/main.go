@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	jsonparser "github.com/CodeYourFuture/immersive-go-course/projects/file-parsing/fileparser"
+	jsonparser "github.com/CodeYourFuture/immersive-go-course/projects/file-parsing/fileparser/json"
 )
 
 func getHighestScorePlayer(players jsonparser.Players) string {
