@@ -18,6 +18,7 @@ func getHighestScorePlayer(players jsonparser.Players) string {
 	}
 	return highestScorePlayer
 }
+
 func getLowestScorePlayer(players jsonparser.Players) string {
 	lowestScore := players[0].HighScore
 	lowestScorePlayer := ""
@@ -29,6 +30,7 @@ func getLowestScorePlayer(players jsonparser.Players) string {
 	}
 	return lowestScorePlayer
 }
+
 func main() {
 	data, err := jsonparser.ParseJSON("./examples/json.txt")
 	if err != nil {
