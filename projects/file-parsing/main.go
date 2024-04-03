@@ -32,7 +32,7 @@ func getLowestScorePlayer(players jsonparser.Players) string {
 }
 
 func main() {
-	data, err := jsonparser.ParseJSON("./examples/json.txt")
+	data, err := jsonparser.JSONParser("./examples/json.txt")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
