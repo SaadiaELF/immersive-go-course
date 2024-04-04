@@ -22,7 +22,7 @@ func TestByteOrder(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			file, _ := os.Open(tc.filename)
-			binaryOrder, err := ByteOrder(file)
+			binaryOrder, err := byteOrder(file)
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, binaryOrder)
 		})

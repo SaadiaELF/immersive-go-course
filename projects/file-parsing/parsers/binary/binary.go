@@ -12,7 +12,7 @@ import (
 
 type Parser struct{}
 
-func ByteOrder(file *os.File) (binary.ByteOrder, error) {
+func byteOrder(file *os.File) (binary.ByteOrder, error) {
 	var byteOrder binary.ByteOrder
 	var endianBytes [2]byte
 	_, err := file.Read(endianBytes[:])
@@ -37,7 +37,7 @@ func (p Parser) Parse(filename string) (players types.Players, err error) {
 	}
 	defer file.Close()
 
-	byteOrder, err := ByteOrder(file)
+	byteOrder, err := byteOrder(file)
 	if err != nil {
 		return nil, err
 	}
