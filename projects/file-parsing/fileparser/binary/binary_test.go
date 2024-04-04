@@ -2,6 +2,7 @@ package binary
 
 import (
 	"encoding/binary"
+	"io"
 	"os"
 	"testing"
 
@@ -10,14 +11,15 @@ import (
 
 func TestByteOrder(t *testing.T) {
 	testCases := []struct {
+		name     string
 		filename string
 		expected binary.ByteOrder
 	}{
-		{filename: "../../examples/custom-binary-le.bin", expected: binary.LittleEndian},
-		{filename: "../../examples/custom-binary-be.bin", expected: binary.BigEndian},
+		{name: "LittleEndian", filename: "../../examples/custom-binary-le.bin", expected: binary.LittleEndian},
+		{name: "BigEndian", filename: "../../examples/custom-binary-be.bin", expected: binary.BigEndian},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.filename, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			file, _ := os.Open(tc.filename)
 			binaryOrder, err := ByteOrder(file)
 			require.NoError(t, err)
@@ -27,19 +29,21 @@ func TestByteOrder(t *testing.T) {
 }
 
 func TestBinaryParser(t *testing.T) {
-	players := Players{{Name: "Aya", HighScore: 10}, {Name: "Prisha", HighScore: 30}, {Name: "Charlie", HighScore: -1}, {Name: "Margot", HighScore: 25}}
 	testCases := []struct {
-		filename string
-		expected Players
+		name                     string
+		filename                 string
+		expected_HighScorePlayer string
+		expected_LowScorePlayer  string
 	}{
-		{filename: "../../examples/custom-binary-le.bin", expected: players},
-		{filename: "../../examples/custom-binary-be.bin", expected: players},
+		{name: "LittleEndian", filename: "../../examples/custom-binary-le.bin", expected_HighScorePlayer: "Prisha", expected_LowScorePlayer: "Charlie"},
+		{name: "BigEndian", filename: "../../examples/custom-binary-be.bin", expected_HighScorePlayer: "Prisha", expected_LowScorePlayer: "Charlie"},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.filename, func(t *testing.T) {
-			players, err := BinaryParser(tc.filename)
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, players)
+		t.Run(tc.name, func(t *testing.T) {
+			highestScorePlayer, lowestScorePlayer, err := BinaryParser(tc.filename)
+			require.ErrorIs(t, err, io.EOF)
+			require.Equal(t, tc.expected_HighScorePlayer, highestScorePlayer)
+			require.Equal(t, tc.expected_LowScorePlayer, lowestScorePlayer)
 		})
 	}
 }
