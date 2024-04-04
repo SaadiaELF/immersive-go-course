@@ -35,14 +35,19 @@ func ByteOrder(file *os.File) (binary.ByteOrder, error) {
 }
 
 // BinaryParser reads a binary file and returns a slice of players
-func BinaryParser(filename string) (players Players, err error) {
+func BinaryParser(filename string) (string, string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 	defer file.Close()
 	byteOrder, err := ByteOrder(file)
+	if err != nil {
+		return "", "", err
+	}
 	r := bufio.NewReader(file)
+	var highestScorePlayer Player
+	var lowestScorePlayer Player
 
 	for {
 		// read the 4 bytes to get the score of the player
@@ -52,17 +57,25 @@ func BinaryParser(filename string) (players Players, err error) {
 			if err == io.EOF {
 				break // exit the loop when reaching the end of the file
 			}
-			return nil, fmt.Errorf("error reading score: %v", err)
+			return "", "", fmt.Errorf("error reading score: %v", err)
 		}
 
 		// read next bytes to get the name of the player till the null byte
 		name, err := r.ReadString(0)
+		name = name[:len(name)-1] // remove the null byte
+		
 		if err != nil {
-			return nil, fmt.Errorf("error reading name: %v", err)
+			return "", "", fmt.Errorf("error reading name: %v", err)
+		}
+		if score >= highestScorePlayer.HighScore {
+			highestScorePlayer.HighScore = score
+			highestScorePlayer.Name = name
+		}
+		if score <= lowestScorePlayer.HighScore {
+			lowestScorePlayer.HighScore = score
+			lowestScorePlayer.Name = name
 		}
 
-		players = append(players, Player{name, score})
 	}
-
-	return players, err
+	return highestScorePlayer.Name, lowestScorePlayer.Name, err
 }
