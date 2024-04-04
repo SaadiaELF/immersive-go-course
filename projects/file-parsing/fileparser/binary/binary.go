@@ -34,7 +34,6 @@ func ByteOrder(file *os.File) (binary.ByteOrder, error) {
 
 }
 
-// BinaryParser reads a binary file and returns a slice of players
 func BinaryParser(filename string) (string, string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -63,7 +62,7 @@ func BinaryParser(filename string) (string, string, error) {
 		// read next bytes to get the name of the player till the null byte
 		name, err := r.ReadString(0)
 		name = name[:len(name)-1] // remove the null byte
-		
+
 		if err != nil {
 			return "", "", fmt.Errorf("error reading name: %v", err)
 		}
