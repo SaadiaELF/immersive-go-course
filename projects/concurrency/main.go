@@ -64,11 +64,11 @@ func main() {
 	cache := NewCache(2)
 	cache.Put(1, "one")
 	cache.Put(2, "two")
-	fmt.Println(cache) 
+	fmt.Println(cache) // Print cache with 1 and 2
 	cache.Put(3, "three")
-	fmt.Println(cache)
+	fmt.Println(cache) // Print cache with 2 and 3 as 1 is removed due to LRU
 	cache.Get(2)
+	fmt.Println(cache) // Print cache with 3 and 2 as 2 is refreshed
 	cache.Put(4, "four")
-
-	fmt.Println(cache)
+	fmt.Println(cache) // Print cache with 2 and 4 as 3 is removed due to LRU
 }
