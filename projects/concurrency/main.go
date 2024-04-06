@@ -46,10 +46,29 @@ func (c *Cache) Put(key int, value any) bool {
 	return exists
 }
 
+// Get returns the value associated with the passed key, and a boolean to indicate whether a value was known or not. If not, nil is returned as the value.
+// Any Get counts as a refresh in terms of LRU tracking.
+func (c *Cache) Get(key int) (any, bool) {
+	// Check if the entry exists in the cache
+	entry, exists := c.storage[key]
+	// If the entry exists, update the last used time
+	if exists {
+		entry.lastUsed = time.Now()
+		c.storage[key] = entry
+	}
+	// Return the value and whether it existed or not
+	return entry.value, exists
+}
+
 func main() {
 	cache := NewCache(2)
 	cache.Put(1, "one")
 	cache.Put(2, "two")
+	fmt.Println(cache) 
 	cache.Put(3, "three")
+	fmt.Println(cache)
+	cache.Get(2)
+	cache.Put(4, "four")
+
 	fmt.Println(cache)
 }
