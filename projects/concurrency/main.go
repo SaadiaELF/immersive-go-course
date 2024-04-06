@@ -39,8 +39,8 @@ func (c *Cache) Put(key int, value any) bool {
 				lruKey = k
 				lruTime = e.lastUsed
 			}
-			delete(c.storage, lruKey)
 		}
+		delete(c.storage, lruKey)
 	}
 	// Return true if the entry already existed, false otherwise
 	return exists
@@ -51,6 +51,5 @@ func main() {
 	cache.Put(1, "one")
 	cache.Put(2, "two")
 	cache.Put(3, "three")
-	cache.Put(4, "four")
 	fmt.Println(cache)
 }
