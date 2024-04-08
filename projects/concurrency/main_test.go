@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,25 +51,23 @@ func TestGet(t *testing.T) {
 
 // test which tries to concurrently use the map from a bunch of goroutines
 func TestConcurrency(t *testing.T) {
-	value, exist := any(nil), false
 	cache := NewCache(2)
-	done := make(chan bool)
-
-	// Failing test as the Get is called before the Put is done , because the cache is not thread safe
-	go func() {
-		cache.Put(1, "one")
-		fmt.Println("Put 1")
-		done <- true
-	}()
-	go func() {
-		value, exist = cache.Get(1)
-		fmt.Println("Get 1")
-		done <- true
-	}()
-	for i := 0; i < 2; i++ {
-		<-done
+	goroutines := 500
+	var keys []int
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			cache.Put(i, fmt.Sprintf("%v-", i))
+			wg.Done()
+		}()
 	}
-	require.True(t, exist)
-	require.Equal(t, "one", value)
-
+	wg.Wait()
+	for i := 0; i < goroutines; i++ {
+		_, exist := cache.Get(i)
+		if exist {
+			keys = append(keys, i)
+		}
+	}
+	require.Equal(t, len(keys), 2)
 }
