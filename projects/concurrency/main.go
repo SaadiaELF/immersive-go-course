@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 type Cache struct {
 	capacity int
 	storage  map[int]entry
+	mu       sync.Mutex
 }
 
 type entry struct {
@@ -26,6 +28,8 @@ func NewCache(capacity int) *Cache {
 // If there was previously a value, it replaces that value with this one.
 // Any Put counts as a refresh in terms of LRU tracking.
 func (c *Cache) Put(key int, value any) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// Check if the entry already exists in the cache
 	_, exists := c.storage[key]
 	// Update the entry with the new value and current time
@@ -40,8 +44,10 @@ func (c *Cache) Put(key int, value any) bool {
 				lruTime = e.lastUsed
 			}
 		}
+
 		delete(c.storage, lruKey)
 	}
+
 	// Return true if the entry already existed, false otherwise
 	return exists
 }
@@ -49,6 +55,8 @@ func (c *Cache) Put(key int, value any) bool {
 // Get returns the value associated with the passed key, and a boolean to indicate whether a value was known or not. If not, nil is returned as the value.
 // Any Get counts as a refresh in terms of LRU tracking.
 func (c *Cache) Get(key int) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// Check if the entry exists in the cache
 	entry, exists := c.storage[key]
 	// If the entry exists, update the last used time
