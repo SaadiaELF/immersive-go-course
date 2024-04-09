@@ -2,14 +2,27 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 )
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, world\n"))
+		if r.Method == "POST" {
+			body, err := io.ReadAll(r.Body)
+
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return
+			}
+			w.Write(body)
+		} else {
+			w.Header().Add("Content-Type", "text/html")
+			w.Write([]byte("<!DOCTYPE html><html><em>Hello, world</em>\n"))
+		}
 	})
+
 	// 200 status code
 	http.HandleFunc("/200", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
