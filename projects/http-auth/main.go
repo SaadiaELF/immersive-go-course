@@ -39,6 +39,16 @@ func main() {
 
 	})
 
+	// authentication
+	http.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok || username != "user" || password != "pass" {
+			w.Header().Set("WWW-Authenticate", `Basic realm="localhost"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	})
+
 	// 200 status code
 	http.HandleFunc("/200", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
