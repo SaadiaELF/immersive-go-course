@@ -9,6 +9,9 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		params := r.URL.Query()
+		w.Header().Add("Content-Type", "text/html")
+
 		if r.Method == "POST" {
 			body, err := io.ReadAll(r.Body)
 
@@ -17,10 +20,21 @@ func main() {
 				return
 			}
 			w.Write(body)
-		} else {
-			w.Header().Add("Content-Type", "text/html")
-			w.Write([]byte("<!DOCTYPE html><html><em>Hello, world</em>\n"))
 		}
+
+		if r.Method == "GET" {
+			if len(params) > 0 {
+				for key, values := range params {
+					strings := fmt.Sprintf("<!DOCTYPE html><html><em>Hello, world</em><p>Query parameters:<ul><li>%v:%v</li></ul>", key, values)
+					w.Write([]byte(strings))
+				}
+			} else {
+				w.Write([]byte("<!DOCTYPE html><html><em>Hello, world</em>\n"))
+			}
+		}
+
+		fmt.Fprintln(os.Stderr, "Error: invalid request")
+
 	})
 
 	// 200 status code
