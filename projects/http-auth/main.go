@@ -4,11 +4,18 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 		w.Header().Add("Content-Type", "text/html")
@@ -42,10 +49,12 @@ func main() {
 	// authentication
 	http.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
-		if !ok || username != "user" || password != "pass" {
+		USERNAME := os.Getenv("AUTH_USERNAME")
+		PASSWORD := os.Getenv("AUTH_PASSWORD")
+
+		if !ok || username != USERNAME || password != PASSWORD {
 			w.Header().Set("WWW-Authenticate", `Basic realm="localhost"`)
 			w.WriteHeader(http.StatusUnauthorized)
-			return
 		}
 	})
 
