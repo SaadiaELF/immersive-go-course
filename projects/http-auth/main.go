@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"os"
@@ -25,7 +26,8 @@ func main() {
 		if r.Method == "GET" {
 			if len(params) > 0 {
 				for key, values := range params {
-					strings := fmt.Sprintf("<!DOCTYPE html><html><em>Hello, world</em><p>Query parameters:<ul><li>%v:%v</li></ul>", key, values)
+					values := html.EscapeString((values[0]))
+					strings := fmt.Sprintf("<!DOCTYPE html><html><em>Hello, world</em><p>Query parameters:<ul><li>%v:%v</li></ul>\n", key, values)
 					w.Write([]byte(strings))
 				}
 			} else {
