@@ -3,10 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"server-database/types"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +56,15 @@ func fetchImages() ([]types.Image, error) {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
+		os.Exit(1)
+	}
 
 	http.HandleFunc("/images.json", handleImages)
 
