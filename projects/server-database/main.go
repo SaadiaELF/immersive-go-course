@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"server-database/types"
 	"strconv"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/joho/godotenv"
 )
 
@@ -66,6 +68,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	conn, err := pgx.Connect(context.Background(), databaseURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
+	}
+	defer conn.Close(context.Background())
 	http.HandleFunc("/images.json", handleImages)
 
 	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
