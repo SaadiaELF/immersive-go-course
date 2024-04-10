@@ -16,6 +16,7 @@ import (
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
 	conn, _ := setDatabaseConnection()
+	defer conn.Close(context.Background())
 	images, _ := fetchImages(conn)
 	indent := getIndentParam(r)
 	b, err := json.MarshalIndent(images, "", indent)
