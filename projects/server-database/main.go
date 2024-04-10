@@ -56,12 +56,7 @@ func fetchImages() ([]types.Image, error) {
 
 	return images, nil
 }
-
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+func setDatabaseConnection() (*pgx.Conn, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
@@ -72,7 +67,15 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	return conn, err
+}
+
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	setDatabaseConnection()
 	http.HandleFunc("/images.json", handleImages)
 
 	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
