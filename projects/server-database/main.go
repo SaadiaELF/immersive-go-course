@@ -15,9 +15,15 @@ import (
 )
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
-	conn, _ := setDatabaseConnection()
+	conn, err := setDatabaseConnection()
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+	}
 	defer conn.Close(context.Background())
-	images, _ := fetchImages(conn)
+	images, err := fetchImages(conn)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+	}
 	indent := getIndentParam(r)
 	b, err := json.MarshalIndent(images, "", indent)
 	if err != nil {
@@ -56,7 +62,7 @@ func fetchImages(conn *pgx.Conn) ([]types.Image, error) {
 			fmt.Fprintf(os.Stderr, "Error: failed to scan image: %v", err)
 		}
 	}
-	return images, nil
+	return images, err
 }
 func setDatabaseConnection() (*pgx.Conn, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
