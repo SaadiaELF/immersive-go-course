@@ -79,12 +79,14 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	}
 	images, err := fetchImages(dbPool, 1)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
 	}
 	indent := getIndentParam(r)
 	b, err := json.MarshalIndent(images, "", indent)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "Error: failed to marshal images: %v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
