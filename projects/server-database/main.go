@@ -46,7 +46,7 @@ func main() {
 	server := &http.Server{
 		Addr: ":8080",
 	}
-	
+
 	// Handle requests
 	http.HandleFunc("/images.json", handleImages)
 
@@ -77,7 +77,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	if dbPool == nil {
 		fmt.Fprintln(os.Stderr, "Database connection is not set")
 	}
-	images, err := fetchImages(dbPool)
+	images, err := fetchImages(dbPool, 1)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
 	}
@@ -91,9 +91,10 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func fetchImages(pool *pgxpool.Pool) ([]types.Image, error) {
+func fetchImages(pool *pgxpool.Pool, limit int) ([]types.Image, error) {
 	var images []types.Image
-	rows, err := pool.Query(context.Background(), "SELECT title, url, alt_text FROM public.images")
+	query := fmt.Sprintf("SELECT title, url, alt_text FROM public.images LIMIT %d", limit)
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
 	}
