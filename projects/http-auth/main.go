@@ -29,7 +29,7 @@ func main() {
 
 	for route, handler := range routes {
 		if route == "/" || route == "/authenticated" {
-			http.HandleFunc(route, rateLimiterMiddleware(handler, 100, 30))
+			http.HandleFunc(route, rateLimiterMiddleware(handler, 0, 0))
 		} else {
 			http.HandleFunc(route, handler)
 		}
@@ -49,7 +49,8 @@ func rateLimiterMiddleware(next http.HandlerFunc, rl rate.Limit, b int) http.Han
 		if limiter.Allow() {
 			next.ServeHTTP(w, r)
 		} else {
-			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("503\n"))
 		}
 	})
 }
