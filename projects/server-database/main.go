@@ -7,8 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"server-database/types"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/joho/godotenv"
@@ -17,16 +20,34 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file %v", err)
 	}
 
+	// Create instance of the server
+	server := &http.Server{
+		Addr: ":8080",
+	}
 	http.HandleFunc("/images.json", handleImages)
 
-	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to listen: %v", err)
-		os.Exit(1)
+	go func() {
+		fmt.Fprintln(os.Stderr, "Listening on port 8080...")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error: failed to listen and serve: %v", err)
+		}
+		log.Println("Stopped serving new connections.")
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownRelease()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Error: failed to shutdown: %v", err)
 	}
+	log.Println("Graceful shutdown complete.")
 }
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
