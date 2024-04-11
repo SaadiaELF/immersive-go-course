@@ -78,27 +78,6 @@ func rateLimiterMiddleware(next http.HandlerFunc, rl rate.Limit, b int) http.Han
 	})
 }
 
-func successHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("200\n"))
-}
-
-func serverErrorHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(500)
-	w.Write([]byte("500\n"))
-}
-
-func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
-	username, password, ok := r.BasicAuth()
-	USERNAME := os.Getenv("AUTH_USERNAME")
-	PASSWORD := os.Getenv("AUTH_PASSWORD")
-
-	if !ok || username != USERNAME || password != PASSWORD {
-		w.Header().Set("WWW-Authenticate", `Basic realm="localhost"`)
-		w.WriteHeader(http.StatusUnauthorized)
-	}
-}
-
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	w.Header().Add("Content-Type", "text/html")
@@ -126,4 +105,25 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintln(os.Stderr, "Error: invalid request")
+}
+
+func successHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	w.Write([]byte("200\n"))
+}
+
+func serverErrorHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(500)
+	w.Write([]byte("500\n"))
+}
+
+func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
+	username, password, ok := r.BasicAuth()
+	USERNAME := os.Getenv("AUTH_USERNAME")
+	PASSWORD := os.Getenv("AUTH_PASSWORD")
+
+	if !ok || username != USERNAME || password != PASSWORD {
+		w.Header().Set("WWW-Authenticate", `Basic realm="localhost"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	}
 }
