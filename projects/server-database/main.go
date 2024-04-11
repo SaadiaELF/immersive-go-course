@@ -13,22 +13,35 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 )
 
+var dbPool *pgxpool.Pool
+
 func main() {
+	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file %v", err)
 	}
 
+	// Set up database connection
+	dbPool, err := setDatabaseConnection()
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+	}
+	defer dbPool.Close()
+
 	// Create instance of the server
 	server := &http.Server{
 		Addr: ":8080",
 	}
+
+	// Handle requests
 	http.HandleFunc("/images.json", handleImages)
 
+	// Start the server
 	go func() {
 		fmt.Fprintln(os.Stderr, "Listening on port 8080...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -37,6 +50,7 @@ func main() {
 		log.Println("Stopped serving new connections.")
 	}()
 
+	// Graceful shutdown
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
@@ -50,13 +64,21 @@ func main() {
 	log.Println("Graceful shutdown complete.")
 }
 
-func handleImages(w http.ResponseWriter, r *http.Request) {
-	conn, err := setDatabaseConnection()
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+func setDatabaseConnection() (*pgxpool.Pool, error) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
 	}
-	defer conn.Close(context.Background())
-	images, err := fetchImages(conn)
+
+	pool, err := pgxpool.Connect(context.Background(), databaseURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
+	}
+	return pool, err
+}
+
+func handleImages(w http.ResponseWriter, r *http.Request) {
+	images, err := fetchImages(dbPool)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
 	}
@@ -70,23 +92,9 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func setDatabaseConnection() (*pgx.Conn, error) {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
-		os.Exit(1)
-	}
-
-	conn, err := pgx.Connect(context.Background(), databaseURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
-	}
-	return conn, err
-}
-
-func fetchImages(conn *pgx.Conn) ([]types.Image, error) {
+func fetchImages(pool *pgxpool.Pool) ([]types.Image, error) {
 	var images []types.Image
-	rows, err := conn.Query(context.Background(), "SELECT title, url, alt_text FROM public.images")
+	rows, err := pool.Query(context.Background(), "SELECT title, url, alt_text FROM public.images")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
 	}
