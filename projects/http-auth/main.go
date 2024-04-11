@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/time/rate"
@@ -26,6 +30,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file : %v", err)
 	}
+	// Create instance of the server
+	server := &http.Server{
+		Addr: ":8080",
+	}
 
 	for route, handler := range routes {
 		if route == "/" || route == "/authenticated" {
@@ -35,11 +43,26 @@ func main() {
 		}
 	}
 
-	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to listen: %v", err)
-		os.Exit(1)
+	go func() {
+		fmt.Fprintln(os.Stderr, "Listening on port 8080...")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error: failed to listen and serve: %v", err)
+		}
+		log.Println("Stopped serving new connections.")
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownRelease()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Error: failed to shutdown: %v", err)
 	}
+	log.Println("Graceful shutdown complete.")
+
 }
 
 func rateLimiterMiddleware(next http.HandlerFunc, rl rate.Limit, b int) http.HandlerFunc {
