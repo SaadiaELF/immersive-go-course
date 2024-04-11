@@ -56,13 +56,11 @@ func rateLimiterMiddleware(next http.HandlerFunc, rl rate.Limit, b int) http.Han
 }
 
 func successHandler(w http.ResponseWriter, r *http.Request) {
-	r.Header.Set("Content-Type", "text/plain")
 	w.WriteHeader(200)
 	w.Write([]byte("200\n"))
 }
 
 func serverErrorHandler(w http.ResponseWriter, r *http.Request) {
-	r.Header.Set("Content-Type", "text/plain")
 	w.WriteHeader(500)
 	w.Write([]byte("500\n"))
 }
