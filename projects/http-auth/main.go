@@ -15,7 +15,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file : %v", err)
 	}
 	limiter := rate.NewLimiter(100, 30)
 	if limiter.Allow() {
