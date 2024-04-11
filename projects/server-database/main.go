@@ -14,6 +14,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	http.HandleFunc("/images.json", handleImages)
+
+	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to listen: %v", err)
+		os.Exit(1)
+	}
+}
+
 func handleImages(w http.ResponseWriter, r *http.Request) {
 	conn, err := setDatabaseConnection()
 	if err != nil {
@@ -34,18 +49,18 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func getIndentParam(r *http.Request) string {
-	params := r.URL.Query()
+func setDatabaseConnection() (*pgx.Conn, error) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
+		os.Exit(1)
+	}
 
-	indentSize, err := strconv.Atoi(params.Get("indent"))
+	conn, err := pgx.Connect(context.Background(), databaseURL)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
 	}
-	indent := ""
-	for i := 0; i < indentSize; i++ {
-		indent += " "
-	}
-	return indent
+	return conn, err
 }
 
 func fetchImages(conn *pgx.Conn) ([]types.Image, error) {
@@ -64,31 +79,17 @@ func fetchImages(conn *pgx.Conn) ([]types.Image, error) {
 	}
 	return images, err
 }
-func setDatabaseConnection() (*pgx.Conn, error) {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
-		os.Exit(1)
-	}
 
-	conn, err := pgx.Connect(context.Background(), databaseURL)
+func getIndentParam(r *http.Request) string {
+	params := r.URL.Query()
+
+	indentSize, err := strconv.Atoi(params.Get("indent"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
+		fmt.Fprint(os.Stderr, err)
 	}
-	return conn, err
-}
-
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	indent := ""
+	for i := 0; i < indentSize; i++ {
+		indent += " "
 	}
-
-	http.HandleFunc("/images.json", handleImages)
-
-	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to listen: %v", err)
-		os.Exit(1)
-	}
+	return indent
 }
