@@ -13,12 +13,12 @@ import (
 )
 
 // http routes
-var routes = map[string]string{
-	"/":              "root",
-	"/200":           "success",
-	"/404":           "not-found",
-	"/500":           "server-error",
-	"/authenticated": "authenticated",
+var routes = map[string]http.HandlerFunc{
+	"/":              rootHandler,
+	"/200":           successHandler,
+	"/404":           http.NotFound,
+	"/500":           serverErrorHandler,
+	"/authenticated": authenticatedHandler,
 }
 
 func main() {
@@ -26,15 +26,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file : %v", err)
 	}
-	limiter := rate.NewLimiter(100, 30)
-	if limiter.Allow() {
-		for route := range routes {
-			http.HandleFunc(route, routeHandler)
+
+	for route, handler := range routes {
+		if route == "/" || route == "/authenticated" {
+			http.HandleFunc(route, rateLimiterMiddleware(handler, 100, 30))
+		} else {
+			http.HandleFunc(route, handler)
 		}
-	} else {
-		fmt.Fprintln(os.Stderr, "Error: rate limit exceeded")
-		os.Exit(1)
 	}
+
 	fmt.Fprintln(os.Stderr, "Listening on port 8080...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to listen: %v", err)
@@ -42,27 +42,16 @@ func main() {
 	}
 }
 
-func routeHandler(w http.ResponseWriter, r *http.Request) {
-	route, ok := routes[r.RequestURI]
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
+func rateLimiterMiddleware(next http.HandlerFunc, rl rate.Limit, b int) http.HandlerFunc {
+	limiter := rate.NewLimiter(rl, b)
 
-	switch route {
-	case "root":
-		handler(w, r)
-	case "success":
-		successHandler(w, r)
-	case "not-found":
-		http.NotFound(w, r)
-	case "server-error":
-		serverErrorHandler(w, r)
-	case "authenticated":
-		authenticatedHandler(w, r)
-	default:
-		http.NotFound(w, r)
-	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if limiter.Allow() {
+			next.ServeHTTP(w, r)
+		} else {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+		}
+	})
 }
 
 func successHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +65,7 @@ func serverErrorHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(500)
 	w.Write([]byte("500\n"))
 }
+
 func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	USERNAME := os.Getenv("AUTH_USERNAME")
@@ -86,7 +76,8 @@ func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}
 }
-func handler(w http.ResponseWriter, r *http.Request) {
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	w.Header().Add("Content-Type", "text/html")
 
