@@ -37,7 +37,7 @@ func main() {
 
 	for route, handler := range routes {
 		if route == "/" || route == "/authenticated" {
-			http.HandleFunc(route, rateLimiterMiddleware(handler, 0, 0))
+			http.HandleFunc(route, rateLimiterMiddleware(handler, 100, 30))
 		} else {
 			http.HandleFunc(route, handler)
 		}
