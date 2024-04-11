@@ -75,9 +75,10 @@ func main() {
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
 	if dbPool == nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(os.Stderr, "Database connection is not set")
 	}
-	images, err := fetchImages(dbPool, 1)
+	images, err := fetchImages(dbPool, 10)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
@@ -113,12 +114,22 @@ func fetchImages(pool *pgxpool.Pool, limit int) ([]types.Image, error) {
 
 func getIndentParam(r *http.Request) string {
 	params := r.URL.Query()
+	indent := params.Get("indent")
+	// case when indent is not provided
+	if indent == "" {
+		return ""
+	}
+	// case when indent is provided but not a number
+	if condition, err := strconv.ParseFloat(indent, 64); condition == 0 {
+		fmt.Fprintf(os.Stderr, "Indent is not a number %v\n", err)
+		return ""
+	}
 
-	indentSize, err := strconv.Atoi(params.Get("indent"))
+	indentSize, err := strconv.Atoi(indent)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
 	}
-	indent := ""
+	indent = ""
 	for i := 0; i < indentSize; i++ {
 		indent += " "
 	}
