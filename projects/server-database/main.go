@@ -27,17 +27,26 @@ func main() {
 	}
 
 	// Set up database connection
-	dbPool, err := setDatabaseConnection()
-	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+	databaseURL := os.Getenv("DATABASE_URL")
+
+	if databaseURL == "" {
+		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
 	}
+
+	dbPool, err = pgxpool.Connect(context.Background(), databaseURL)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	//to close DB pool
 	defer dbPool.Close()
 
 	// Create instance of the server
 	server := &http.Server{
 		Addr: ":8080",
 	}
-
+	
 	// Handle requests
 	http.HandleFunc("/images.json", handleImages)
 
@@ -64,20 +73,10 @@ func main() {
 	log.Println("Graceful shutdown complete.")
 }
 
-func setDatabaseConnection() (*pgxpool.Pool, error) {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
-	}
-
-	pool, err := pgxpool.Connect(context.Background(), databaseURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to connect to database: %v", err)
-	}
-	return pool, err
-}
-
 func handleImages(w http.ResponseWriter, r *http.Request) {
+	if dbPool == nil {
+		fmt.Fprintln(os.Stderr, "Database connection is not set")
+	}
 	images, err := fetchImages(dbPool)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
