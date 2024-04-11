@@ -83,7 +83,11 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
 	}
-	indent := getIndentParam(r)
+	indent, err := getIndentParam(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(os.Stderr, "Error: failed to parse indent: %v", err)
+	}
 	b, err := json.MarshalIndent(images, "", indent)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -112,26 +116,25 @@ func fetchImages(pool *pgxpool.Pool, limit int) ([]types.Image, error) {
 	return images, err
 }
 
-func getIndentParam(r *http.Request) string {
+func getIndentParam(r *http.Request) (string, error) {
 	params := r.URL.Query()
 	indent := params.Get("indent")
 	// case when indent is not provided
 	if indent == "" {
-		return ""
+		return "", nil
 	}
-	// case when indent is provided but not a number
-	if condition, err := strconv.ParseFloat(indent, 64); condition == 0 {
-		fmt.Fprintf(os.Stderr, "Indent is not a number %v\n", err)
-		return ""
+	// case when indent is not parsable to int
+	if condition, err := strconv.ParseInt(indent, 10, 8); condition == 0 {
+		return "", err
 	}
 
 	indentSize, err := strconv.Atoi(indent)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		return "", err
 	}
 	indent = ""
 	for i := 0; i < indentSize; i++ {
 		indent += " "
 	}
-	return indent
+	return indent, nil
 }
