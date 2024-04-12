@@ -22,7 +22,7 @@ func main() {
 	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file %v", err)
+		log.Fatalf("Error loading .env file %v\n", err)
 	}
 
 	// Set up database connection
@@ -35,7 +35,7 @@ func main() {
 	dbPool, err = pgxpool.Connect(context.Background(), databaseURL)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to connect to database: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 	//to close DB pool
@@ -53,7 +53,7 @@ func main() {
 	go func() {
 		fmt.Fprintln(os.Stderr, "Listening on port 8080...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error: failed to listen and serve: %v", err)
+			log.Fatalf("Error: failed to listen and serve: %v\n", err)
 		}
 		log.Println("Stopped serving new connections.")
 	}()
@@ -64,7 +64,7 @@ func main() {
 	<-sigCh
 
 	if err := server.Shutdown(context.Background()); err != nil {
-		log.Fatalf("Error: failed to shutdown: %v", err)
+		log.Fatalf("Error: failed to shutdown: %v\n", err)
 	}
 	log.Println("Graceful shutdown complete.")
 }
@@ -83,19 +83,19 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 		images, err := fetchImages(dbPool, 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v\n", err)
 		}
 
 		indent, err := getIndentParam(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(os.Stderr, "Error: failed to parse indent: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: failed to parse indent: %v\n", err)
 		}
 
 		b, err := json.MarshalIndent(images, "", indent)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(os.Stderr, "Error: failed to marshal images: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: failed to marshal images: %v\n", err)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -111,7 +111,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&image)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(os.Stderr, "Error: failed to decode image: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: failed to decode image: %v\n", err)
 	}
 
 	// Check if the image url exists in the database
@@ -121,7 +121,8 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	err = row.Scan(&url)
 	if err == nil {
 		w.WriteHeader(http.StatusConflict)
-		fmt.Fprintf(os.Stderr, "Error: image with url %s already exists", image.URL)
+		w.Write([]byte("Image with url already exists\n"))
+		fmt.Fprintf(os.Stderr, "Error: image with url %s already exists\n", image.URL)
 		return
 	}
 
@@ -130,7 +131,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	_, err = dbPool.Exec(context.Background(), query, image.Title, image.URL, image.AltText)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "Error: failed to insert image: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: failed to insert image: %v\n", err)
 	}
 	w.WriteHeader(http.StatusCreated)
 }
@@ -141,14 +142,14 @@ func fetchImages(pool *pgxpool.Pool, limit int) ([]types.Image, error) {
 	query := fmt.Sprintf("SELECT title, url, alt_text FROM public.images LIMIT %d", limit)
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v\n", err)
 	}
 	for rows.Next() {
 		var title, url, altText string
 		err = rows.Scan(&title, &url, &altText)
 		images = append(images, types.Image{Title: title, URL: url, AltText: altText})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: failed to scan image: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: failed to scan image: %v\n", err)
 		}
 	}
 	return images, err
