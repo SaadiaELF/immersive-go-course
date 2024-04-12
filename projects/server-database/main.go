@@ -11,7 +11,6 @@ import (
 	"server-database/types"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
@@ -64,10 +63,7 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownRelease()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	if err := server.Shutdown(context.Background()); err != nil {
 		log.Fatalf("Error: failed to shutdown: %v", err)
 	}
 	log.Println("Graceful shutdown complete.")
