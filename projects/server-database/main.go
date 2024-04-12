@@ -41,13 +41,13 @@ func main() {
 	//to close DB pool
 	defer dbPool.Close()
 
+	// Handle requests
+	http.HandleFunc("/images.json", handleImages)
+
 	// Create instance of the server
 	server := &http.Server{
 		Addr: ":8080",
 	}
-
-	// Handle requests
-	http.HandleFunc("/images.json", handleImages)
 
 	// Start the server
 	go func() {
