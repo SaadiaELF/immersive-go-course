@@ -2,7 +2,6 @@ package static
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,11 +9,7 @@ import (
 	"syscall"
 )
 
-func Run() {
-	// Parse command line flags
-	path := flag.String("path", "./", "path where the static files are read from")
-	port := flag.String("port", "8080", "port to run the static server")
-	flag.Parse()
+func Run(path *string, port *string) {
 
 	//build the server and start it
 	handler := http.FileServer(http.Dir(*path))
