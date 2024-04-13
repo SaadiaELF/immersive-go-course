@@ -1,6 +1,8 @@
 package main
 
-import "servers/static"
+import (
+	"servers/static"
+)
 
 func main() {
 	static.Run()
