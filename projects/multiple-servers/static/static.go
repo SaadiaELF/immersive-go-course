@@ -11,9 +11,7 @@ import (
 
 func Run(path *string, port *string) {
 
-	//build the server and start it
-	handler := http.FileServer(http.Dir(*path))
-	http.Handle("/", handler)
+	http.Handle("/", http.FileServer(http.Dir(*path)))
 
 	// Create instance of http.Server
 	server := &http.Server{
