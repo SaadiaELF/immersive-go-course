@@ -84,6 +84,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(os.Stderr, "Error: failed to marshal images: %v\n", err)
 		}
 
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8082")
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(b)
 	}
