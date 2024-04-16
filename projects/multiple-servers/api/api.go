@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -83,7 +84,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(os.Stderr, "Error: failed to marshal images: %v\n", err)
 		}
-
+		log.Println(r.Method, r.URL.EscapedPath())
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8082")
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(b)
