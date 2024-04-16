@@ -19,7 +19,7 @@ func main() {
 
 	// Parse command line flags
 	dbURL := flag.String("path", databaseURL, "path where the static files are read from")
-	port := flag.String("port", "8080", "port to run the static server")
+	port := flag.String("port", "8081", "port to run the static server")
 	flag.Parse()
 	api.Run(dbURL, port)
 }
