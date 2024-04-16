@@ -27,7 +27,7 @@ func Run(dbURL *string, port *string) {
 	defer dbPool.Close()
 
 	// Handle requests
-	http.HandleFunc("/images.json", handleImages)
+	http.HandleFunc("/api/images.json", handleImages)
 
 	// Create instance of http.Server
 	server := &http.Server{
