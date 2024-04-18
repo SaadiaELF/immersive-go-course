@@ -112,6 +112,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(os.Stderr, "Error: failed to decode image: %v\n", err)
+		return
 	}
 
 	// Check if the image url exists in the database
