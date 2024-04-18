@@ -12,11 +12,19 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
-var dbPool *pgxpool.Pool
+type db interface {
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+}
+
+// var dbPool *pgxpool.Pool
 
 func main() {
 	// Load environment variables
@@ -32,7 +40,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
 	}
 
-	dbPool, err = pgxpool.Connect(context.Background(), databaseURL)
+	dbPool, err := pgxpool.New(context.Background(), databaseURL)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
@@ -42,7 +50,10 @@ func main() {
 	defer dbPool.Close()
 
 	// Handle requests
-	http.HandleFunc("/images.json", handleImages)
+	imageHandler := func(w http.ResponseWriter, r *http.Request) {
+		handleImages(w, r, dbPool)
+	}
+	http.HandleFunc("/images.json", imageHandler)
 
 	// Create instance of the server
 	server := &http.Server{
@@ -70,14 +81,14 @@ func main() {
 }
 
 // handleImages fetches images from the database and returns them as a JSON response.
-func handleImages(w http.ResponseWriter, r *http.Request) {
+func handleImages(w http.ResponseWriter, r *http.Request, dbPool db) {
 	if dbPool == nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(os.Stderr, "Database connection is not set")
 	}
 
 	if r.Method == "POST" {
-		postImage(w, r)
+		postImage(dbPool, w, r)
 	}
 	if r.Method == "GET" {
 		images, err := fetchImages(dbPool, 10)
@@ -104,7 +115,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /images.json
-func postImage(w http.ResponseWriter, r *http.Request) {
+func postImage(dbPool db, w http.ResponseWriter, r *http.Request) {
 
 	// Parse the request body
 	var image types.Image
@@ -116,7 +127,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the image url exists in the database
-	query := "SELECT url FROM public.images WHERE url = $1"
+	query := `SELECT url FROM public.images WHERE url = $1`
 	row := dbPool.QueryRow(context.Background(), query, image.URL)
 	var url string
 	err = row.Scan(&url)
@@ -128,7 +139,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the image into the database
-	query = "INSERT INTO public.images (title, url, alt_text) VALUES ($1, $2, $3)"
+	query = `INSERT INTO public.images (title, url, alt_text) VALUES ($1, $2, $3)`
 	_, err = dbPool.Exec(context.Background(), query, image.Title, image.URL, image.AltText)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -138,7 +149,7 @@ func postImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // fetchImages fetches images from the database.
-func fetchImages(pool *pgxpool.Pool, limit int) ([]types.Image, error) {
+func fetchImages(pool db, limit int) ([]types.Image, error) {
 	var images []types.Image
 	query := fmt.Sprintf("SELECT title, url, alt_text FROM public.images LIMIT %d", limit)
 	rows, err := pool.Query(context.Background(), query)
