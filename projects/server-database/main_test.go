@@ -22,9 +22,7 @@ func TestPostImage(t *testing.T) {
 		imageUrl           string
 		expectedStatusCode int
 		expectSelect       bool
-		selectResultRow    *pgxmock.Rows
 		expectInsert       bool
-		// expectInsertValues []
 	}
 
 	testCases := []test{
@@ -38,32 +36,42 @@ func TestPostImage(t *testing.T) {
 		},
 		{
 			name:               "existing image url",
-			image:              `{"title": "image", "url": "/image", "alt_text": "img"}`,
-			imageUrl:           "/image",
+			image:              `{"title": "image", "url": "http://example.com/image", "alt_text": "img"}`,
+			imageUrl:           "http://example.com/image",
 			expectedStatusCode: http.StatusConflict,
 			expectSelect:       true,
-			selectResultRow:    mock.NewRows([]string{"url"}).AddRow("/image"),
 			expectInsert:       false,
+		},
+		{
+			name:               "insert image",
+			image:              `{"title": "image", "url": "http://example.com/image", "alt_text": "img"}`,
+			imageUrl:           "http://example.com/image",
+			expectedStatusCode: http.StatusCreated,
+			expectSelect:       false,
+			expectInsert:       true,
 		},
 	}
 
 	for _, tc := range testCases {
 
 		if tc.expectSelect {
-			query := `SELECT url FROM public.images WHERE url = $1`
-			mock.ExpectQuery(query).
+			mock.NewRows([]string{"url"}).AddRow("http://example.com/image")
+			mock.ExpectQuery(`SELECT url FROM public.images WHERE url = \$1`).
 				WithArgs(tc.imageUrl).
-				WillReturnRows(tc.selectResultRow)
+				WillReturnRows(mock.NewRows([]string{"url"}).AddRow("http://example.com/image"))
 		}
-		// if tc.expectInsert {
-		// TODO: Implement the expectInsert branch.
-		// }
+		if tc.expectInsert {
+			query := `INSERT INTO public.images`
+			mock.ExpectExec(query).
+				WithArgs("image", "http://example.com/image", "img").
+				WillReturnResult(pgxmock.NewResult("INSERT", 1))
+		}
 
 		req, _ := http.NewRequest(http.MethodPost, tc.imageUrl, strings.NewReader(tc.image))
 		resp := httptest.NewRecorder()
-		postImage(resp, req)
+		postImage(mock, resp, req)
 		if tc.expectedStatusCode != resp.Code {
-			t.Errorf("testcase %s: got %v, want %v", tc.name, tc.expectedStatusCode, resp.Code)
+			t.Errorf("testcase %s: got %v, want %v", tc.name, resp.Code, tc.expectedStatusCode)
 		}
 	}
 }
