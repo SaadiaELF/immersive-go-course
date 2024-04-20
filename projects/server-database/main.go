@@ -151,10 +151,11 @@ func postImage(dbPool db, w http.ResponseWriter, r *http.Request) {
 // fetchImages fetches images from the database.
 func fetchImages(pool db, limit int) ([]types.Image, error) {
 	var images []types.Image
-	query := fmt.Sprintf("SELECT title, url, alt_text FROM public.images LIMIT %d", limit)
-	rows, err := pool.Query(context.Background(), query)
+	query := `SELECT title, url, alt_text FROM public.images LIMIT $1`
+	rows, err := pool.Query(context.Background(), query, limit)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to fetch images: %v\n", err)
+		return nil, err
 	}
 	for rows.Next() {
 		var title, url, altText string
@@ -162,9 +163,10 @@ func fetchImages(pool db, limit int) ([]types.Image, error) {
 		images = append(images, types.Image{Title: title, URL: url, AltText: altText})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: failed to scan image: %v\n", err)
+			return nil, err
 		}
 	}
-	return images, err
+	return images, nil
 }
 
 // getIndentParam returns the indent parameter from the request query string.
