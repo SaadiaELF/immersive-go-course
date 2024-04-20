@@ -75,3 +75,23 @@ func TestPostImage(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchImages(t *testing.T) {
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mock.Close()
+
+	query := `SELECT title, url, alt_text FROM public.images LIMIT \$1`
+	mock.ExpectQuery(query).
+		WithArgs(10).
+		WillReturnRows(mock.NewRows([]string{"title", "url", "alt_text"}).
+			AddRow("image", "http://example.com/image", "img"))
+
+	_, err = fetchImages(mock, 10)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+}
