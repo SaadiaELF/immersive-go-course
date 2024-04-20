@@ -95,3 +95,38 @@ func TestFetchImages(t *testing.T) {
 	}
 
 }
+
+func TestGetIndentParam(t *testing.T) {
+	testCases := []struct {
+		name        string
+		indent      string
+		expectError bool
+	}{
+		{
+			name:        "indent is not present",
+			indent:      "",
+			expectError: false,
+		},
+		{
+			name:        "indent is parsable to int",
+			indent:      "2",
+			expectError: false,
+		},
+		{
+			name:        "indent is not parsable to int",
+			indent:      "true",
+			expectError: true,
+		},
+	}
+	for _, tc := range testCases {
+		req, _ := http.NewRequest(http.MethodGet, "/images.json?indent="+tc.indent, nil)
+		_, err := getIndentParam(req)
+
+		if !tc.expectError && err != nil {
+			t.Errorf("Expected no error, but got %v", err)
+		}
+		if tc.expectError && err == nil {
+			t.Errorf("Expected error, but got nil")
+		}
+	}
+}
