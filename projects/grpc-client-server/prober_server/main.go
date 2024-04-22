@@ -23,13 +23,25 @@ type server struct {
 }
 
 func (s *server) DoProbes(ctx context.Context, in *pb.ProbeRequest) (*pb.ProbeReply, error) {
-	// TODO: support a number of repetitions and return average latency
+	numOFRequests := in.GetNumOfRequests()
 	start := time.Now()
-	_, _ = http.Get(in.GetEndpoint())	// TODO: add error handling here and check the response code
+
+	for i := 0; i < int(numOFRequests); i++ {
+		resp, err := http.Get(in.GetEndpoint())
+		if err != nil {
+			log.Fatalf("could not probe: %v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			log.Fatalf("Unexpected status code: %v", resp.Status)
+		}
+	}
+
 	elapsed := time.Since(start)
 	elapsedMsecs := float32(elapsed / time.Millisecond)
+	fmt.Printf("Elapsed time: %f\n", elapsedMsecs)
 
-	return &pb.ProbeReply{LatencyMsecs: elapsedMsecs}, nil
+	return &pb.ProbeReply{AvgLatencyMsecs: elapsedMsecs / float32(numOFRequests)}, nil
 }
 
 func main() {
