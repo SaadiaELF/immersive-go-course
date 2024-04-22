@@ -12,7 +12,9 @@ import (
 )
 
 var (
-	addr = flag.String("addr", "localhost:50051", "the address to connect to")
+	addr        = flag.String("addr", "localhost:50051", "the address to connect to")
+	endpoint    = flag.String("endpoint", "http://www.google.com", "the endpoint to probe")
+	repetitions = flag.Int("repetitions", 1, "the number of times to probe the endpoint")
 )
 
 func main() {
@@ -28,11 +30,10 @@ func main() {
 	// Contact the server and print out its response.
 	ctx := context.Background() // TODO: add a timeout
 
-	// TODO: endpoint should be a flag
-	// TODO: add number of times to probe
-	r, err := c.DoProbes(ctx, &pb.ProbeRequest{Endpoint: "http://www.google.com"})
+
+	r, err := c.DoProbes(ctx, &pb.ProbeRequest{Endpoint: *endpoint, NumOfRequests: int64(*repetitions)})
 	if err != nil {
 		log.Fatalf("could not probe: %v", err)
 	}
-	log.Printf("Response Time: %f", r.GetLatencyMsecs())
+	log.Printf("Response Time: %f", r.GetAvgLatencyMsecs())
 }
