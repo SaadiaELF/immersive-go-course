@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"time"
 
 	pb "github.com/CodeYourFuture/immersive-go-course/grpc-client-server/prober"
 	"google.golang.org/grpc"
@@ -28,8 +29,8 @@ func main() {
 	c := pb.NewProberClient(conn)
 
 	// Contact the server and print out its response.
-	ctx := context.Background() // TODO: add a timeout
-
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+	defer cancel()
 
 	r, err := c.DoProbes(ctx, &pb.ProbeRequest{Endpoint: *endpoint, NumOfRequests: int64(*repetitions)})
 	if err != nil {
