@@ -7,5 +7,5 @@ import (
 
 func main() {
 	fmt.Println("Hello...")
-	cmd.CtrlC()
+	cmd.CtrlCKill()
 }
