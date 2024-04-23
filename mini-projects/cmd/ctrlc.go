@@ -19,7 +19,9 @@ func CtrlC() {
 
 func CtrlCKill() {
 	var pid int
-
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT)
+	<-sigCh
 	fmt.Println("\rEnter the PID of the process you want to kill: ")
 	_, err := fmt.Scan(&pid)
 	if err != nil {
