@@ -15,7 +15,7 @@ import (
 var (
 	addr        = flag.String("addr", "localhost:50051", "the address to connect to")
 	endpoint    = flag.String("endpoint", "http://www.google.com", "the endpoint to probe")
-	repetitions = flag.Int("repetitions", 1, "the number of times to probe the endpoint")
+	repetitions = flag.Int("repetitions", 10, "the number of times to probe the endpoint")
 )
 
 func main() {
@@ -29,12 +29,14 @@ func main() {
 	c := pb.NewProberClient(conn)
 
 	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-
-	r, err := c.DoProbes(ctx, &pb.ProbeRequest{Endpoint: *endpoint, NumOfRequests: int64(*repetitions)})
+	timeOutMsecs := int64(3000)
+	r, err := c.DoProbes(ctx, &pb.ProbeRequest{Endpoint: *endpoint, NumOfRequests: int64(*repetitions), TimeOutMsecs: &timeOutMsecs})
 	if err != nil {
 		log.Fatalf("could not probe: %v", err)
 	}
 	log.Printf("Response Time: %f", r.GetAvgLatencyMsecs())
+	log.Printf("Percentage of errors: %f %%", r.GetPercentageErrors())
+	log.Printf("Status codes: %+v", r.GetStatusCodes())
 }
