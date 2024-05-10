@@ -24,16 +24,30 @@ type server struct {
 
 func (s *server) DoProbes(ctx context.Context, in *pb.ProbeRequest) (*pb.ProbeReply, error) {
 	numOFRequests := in.GetNumOfRequests()
+	numOfErrors := 0
 	start := time.Now()
 
+	timeOut := 4 * time.Second
+	if in.TimeOutMsecs != nil {
+		timeOut = time.Duration(in.GetTimeOutMsecs()) * time.Millisecond
+	}
+	client := http.Client{
+		Timeout: timeOut,
+	}
+	fmt.Printf("Time out : %v\n", timeOut)
+
+	result := pb.ProbeReply{StatusCodes: make(map[int64]int64)}
+
 	for i := 0; i < int(numOFRequests); i++ {
-		resp, err := http.Get(in.GetEndpoint())
+
+		resp, err := client.Get(in.GetEndpoint())
 		if err != nil {
-			log.Fatalf("could not probe: %v", err)
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			log.Fatalf("Unexpected status code: %v", resp.Status)
+			numOfErrors++
+			fmt.Printf("could not probe: %+v", err)
+		} else {
+			defer resp.Body.Close()
+			code := int64(resp.StatusCode)
+			result.StatusCodes[code]++
 		}
 	}
 
@@ -41,7 +55,9 @@ func (s *server) DoProbes(ctx context.Context, in *pb.ProbeRequest) (*pb.ProbeRe
 	elapsedMsecs := float32(elapsed / time.Millisecond)
 	fmt.Printf("Elapsed time: %f\n", elapsedMsecs)
 
-	return &pb.ProbeReply{AvgLatencyMsecs: elapsedMsecs / float32(numOFRequests)}, nil
+	result.AvgLatencyMsecs = elapsedMsecs / float32(numOFRequests)
+	result.PercentageErrors = (float32(numOfErrors) / float32(numOFRequests)) * float32(100)
+	return &result, nil
 }
 
 func main() {
