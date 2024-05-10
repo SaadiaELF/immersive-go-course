@@ -18,9 +18,8 @@ message ProbeRequest {
 
 // The response message containing the result
 message ProbeReply {
-// average response time of the several requests
-  float avg_latency_msecs = 1;
-  float percentage_errors = 2;
-  map<int64, int64> status_codes = 3;
+  float avg_latency_msecs = 1; // average response time of the several requests
+  float percentage_errors = 2; // percentage of errors encountered during a request
+  map<int64, int64> status_codes = 3; // Map status codes to number of occurrences
 }
 
