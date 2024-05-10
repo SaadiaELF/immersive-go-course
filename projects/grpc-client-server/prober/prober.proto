@@ -13,11 +13,14 @@ service Prober {
 message ProbeRequest {
   string endpoint = 1;
   int64 num_of_requests = 2;
+  optional int64 time_out_msecs = 3; // if not specified set default at 2000 ms
 }
 
 // The response message containing the result
 message ProbeReply {
 // average response time of the several requests
   float avg_latency_msecs = 1;
+  float percentage_errors = 2;
+  map<int64, int64> status_codes = 3;
 }
 
