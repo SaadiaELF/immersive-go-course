@@ -104,10 +104,15 @@ func (as *Service) handleMyNoteById(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("api: GetNoteById failed: %v\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if note == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
 	}
 
 	response := struct {
-		Note model.Note `json:"note"`
+		Note *model.Note `json:"note"`
 	}{
 		Note: note,
 	}
