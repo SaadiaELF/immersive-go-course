@@ -14,6 +14,9 @@ func main() {
 		fmt.Printf("err loading: %v", err)
 	}
 	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "80"
+	}
 	addr := fmt.Sprintf(":%s", port)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, world!\n"))
