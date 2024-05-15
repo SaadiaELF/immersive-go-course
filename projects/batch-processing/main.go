@@ -99,7 +99,6 @@ func main() {
 		}
 
 		filename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
-		fmt.Println(filename)
 		err := DownloadImage(filename, record[0])
 		if err != nil {
 			log.Printf("error: %v\n", err)
