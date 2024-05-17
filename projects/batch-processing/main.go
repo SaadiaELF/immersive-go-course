@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"gopkg.in/gographics/imagick.v2/imagick"
@@ -54,7 +55,7 @@ func main() {
 	log.Printf("processing: %q to %q\n", *inputFilepath, *outputFilepath)
 
 	for i, record := range records {
-		// Skip the header
+		// Check if the first row is the header
 		if i == 0 {
 			if record[0] == "url" {
 				continue
@@ -63,17 +64,23 @@ func main() {
 			}
 		}
 
+		// Check if the url is valid
+		if !IsValidURL(record[0]) {
+			log.Fatalf("invalid url found in the csv file: %v\n", record[0])
+		}
+
+		// Download the image
 		filename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
 		err := DownloadImage(filename, record[0])
 		if err != nil {
-			log.Fatal("error: %v\n", err)
+			log.Fatal("error downloading: %v\n", err)
 		}
 
-		// Do the conversion!
+		// Convert the image to grayscale
 		dest := fmt.Sprintf("%s/img-0%v.jpg", *outputFilepath, i)
 		err = c.Grayscale(filename, dest)
 		if err != nil {
-			log.Fatalf("error: %v\n", err)
+			log.Fatalf("error converting image: %v\n", err)
 		}
 	}
 
@@ -91,12 +98,18 @@ func ReadCSV(filename string) (records [][]string, err error) {
 
 	// Read the CSV file
 	r := csv.NewReader(f)
-
 	records, err = r.ReadAll()
 	if err != nil {
 		return nil, err
 	}
 	return records, nil
+}
+func IsValidURL(imgUrl string) bool {
+	_, err := url.ParseRequestURI(imgUrl)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func DownloadImage(filepath string, url string) error {
