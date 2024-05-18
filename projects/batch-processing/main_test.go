@@ -46,7 +46,7 @@ func TestGrayscaleMockCall(t *testing.T) {
 	}
 }
 
-func CreateCSVInputFile(records [][]string) (string, error) {
+func CreateTempCSVFile(records [][]string) (string, error) {
 	// Create a temporary file
 	file, err := os.CreateTemp("", "input-*.csv")
 	if err != nil {
@@ -90,7 +90,7 @@ func TestReadCSV(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			filepath, err := CreateCSVInputFile(tc.records)
+			filepath, err := CreateTempCSVFile(tc.records)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -106,4 +106,55 @@ func TestReadCSV(t *testing.T) {
 		})
 	}
 
+}
+
+func CreateTempImageFile() (string, error) {
+	// Create a temporary file
+	file, err := os.CreateTemp("", "image-*.jpg")
+	if err != nil {
+		return "", fmt.Errorf("could not create temp file: %v", err)
+	}
+	return file.Name(), nil
+}
+func TestDownloadImage(t *testing.T) {
+	testcases := []struct {
+		name string
+		url  string
+	}{
+		{
+			name: "invalid url non-200",
+			url:  "https://example.com/image.jpg",
+		},
+		{
+			name: "invalid url non-image",
+			url:  "https://google.com",
+		},
+
+		{
+			name: "invalid url",
+			url:  "/invalid/url",
+		},
+		{
+			name: "valid url",
+			url:  "https://upload.wikimedia.org/wikipedia/commons/1/11/Test-Logo.svg",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			filepath, err := CreateTempImageFile()
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = DownloadImage(filepath, tc.url)
+			if tc.name != "valid url" && err == nil {
+				t.Fatalf("expected error, got %v", filepath)
+			}
+			if tc.name == "valid url" && err != nil {
+				t.Fatalf("expected %s, got error: %v", filepath, err)
+			}
+
+			defer os.Remove(filepath)
+		})
+	}
 }
