@@ -92,9 +92,11 @@ func ReadCSV(filename string) (records [][]string, err error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	if len(records) == 0 {
 		return nil, fmt.Errorf("no records found in the csv file")
-	}
+	}	
+
 	if len(records[0]) > 1 {
 		return records, fmt.Errorf("more than one column is found in the csv file")
 	}
