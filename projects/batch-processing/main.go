@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
@@ -65,11 +64,6 @@ func main() {
 			}
 		}
 
-		// Check if the url is valid
-		if !IsValidURL(record[0]) {
-			log.Printf("invalid url found in the csv file: %v\n", record[0])
-		}
-
 		// Download the image
 		filename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
 		err := DownloadImage(filename, record[0])
@@ -104,13 +98,6 @@ func ReadCSV(filename string) (records [][]string, err error) {
 		return nil, err
 	}
 	return records, nil
-}
-func IsValidURL(imgUrl string) bool {
-	_, err := url.ParseRequestURI(imgUrl)
-	if err != nil {
-		return false
-	}
-	return true
 }
 
 func DownloadImage(filepath string, url string) error {
