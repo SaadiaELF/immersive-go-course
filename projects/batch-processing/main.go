@@ -66,21 +66,21 @@ func main() {
 
 		// Check if the url is valid
 		if !IsValidURL(record[0]) {
-			log.Fatalf("invalid url found in the csv file: %v\n", record[0])
+			log.Printf("invalid url found in the csv file: %v\n", record[0])
 		}
 
 		// Download the image
 		filename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
 		err := DownloadImage(filename, record[0])
 		if err != nil {
-			log.Fatal("error downloading: %v\n", err)
+			log.Printf("error downloading: %v\n", err)
 		}
 
 		// Convert the image to grayscale
 		dest := fmt.Sprintf("%s/img-0%v.jpg", *outputFilepath, i)
 		err = c.Grayscale(filename, dest)
 		if err != nil {
-			log.Fatalf("error converting image: %v\n", err)
+			log.Printf("error converting image: %v\n", err)
 		}
 	}
 
