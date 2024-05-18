@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
@@ -125,6 +126,17 @@ func DownloadImage(filepath string, url string) error {
 	if err != nil {
 		return err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the image: %v", resp.Status)
+	}
+
+	// Check if it's an image
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		return fmt.Errorf("invalid image type: %v", contentType)
+	}
+
 	defer resp.Body.Close()
 
 	// Write the image to the file
