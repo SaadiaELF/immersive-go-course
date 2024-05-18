@@ -38,14 +38,9 @@ func main() {
 	log.Println("Reading input CSV file ... ")
 	records, err := ReadCSV("./inputs/inputs.csv")
 	if err != nil {
-		log.Fatalf("error: Could not read csv file: %v\n", err)
+		log.Printf("error: Could not read csv file: %v\n", err)
 	}
-	if len(records) == 0 {
-		log.Fatalln("no records found in the csv file")
-	}
-	if len(records[0]) > 1 {
-		log.Println("more than one column is found in the csv file")
-	}
+
 	// Download the images and process them
 	// Set up imagemagick
 	imagick.Initialize()
@@ -97,6 +92,13 @@ func ReadCSV(filename string) (records [][]string, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(records) == 0 {
+		return nil, fmt.Errorf("no records found in the csv file")
+	}
+	if len(records[0]) > 1 {
+		return records, fmt.Errorf("more than one column is found in the csv file")
+	}
+
 	return records, nil
 }
 
