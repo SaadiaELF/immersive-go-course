@@ -142,11 +142,7 @@ func TestDownloadImage(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			filepath, err := CreateTempImageFile()
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = DownloadImage(filepath, tc.url)
+			filepath, err := DownloadImage(tc.url)
 			if tc.name != "valid url" && err == nil {
 				t.Fatalf("expected error, got %v", filepath)
 			}
