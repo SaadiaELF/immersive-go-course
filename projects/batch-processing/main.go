@@ -25,17 +25,18 @@ type Converter struct {
 }
 
 func main() {
-	// Accept --input and --output arguments for the images
+	// Define the flags for the input and output CSV files
 	inputFilepath := flag.String("input", "", "A path to a CSV file with image URLs to process")
 	outputFilepath := flag.String("output", "", "A path to where the processed records should be written")
 	failedFilepath := flag.String("output-failed", "", "A path to where the failed records should be written")
 	flag.Parse()
 
 	// Ensure that both flags were set
-	if *inputFilepath == "" || *outputFilepath == "" {
+	if *inputFilepath == "" || *outputFilepath == "" || *failedFilepath == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
+
 	// Build a Converter struct that will use imagick
 	c := &Converter{
 		cmd: imagick.ConvertImageCommand,
@@ -45,13 +46,14 @@ func main() {
 	log.Printf("processing: %q to %q\n", *inputFilepath, *outputFilepath)
 
 	// Read the CSV file
-	log.Println("Reading input CSV file ... ")
+	log.Println("reading input CSV file ... ")
 	inputsFilepath := fmt.Sprintf("./inputs/%s", *inputFilepath)
 	records, err := ReadCSV(inputsFilepath)
 	if err != nil {
 		log.Printf("error: Could not read csv file: %v\n", err)
 	}
 
+	// Create the output records and failed records
 	outputRecords := [][]string{{"url", "input", "output", "s3url"}}
 	failedRecords := [][]string{{"url"}}
 
@@ -86,6 +88,7 @@ func main() {
 			failedRecords = append(failedRecords, []string{record[0]})
 			continue
 		}
+
 		//Upload the images to the aws s3 bucket if no error
 		s3url, err := UploadImage(outputFilename)
 		if err != nil {
@@ -94,20 +97,21 @@ func main() {
 		}
 
 		outputRecords = append(outputRecords, []string{record[0], inputFilename, outputFilename, s3url})
-
 	}
 
 	// Create a CSV file with the output records
-	log.Println("Creating output CSV file ... ")
+	log.Println("creating output CSV file ... ")
 	outputsFilepath := fmt.Sprintf("./outputs/%s", *outputFilepath)
 	_, err = CreateCSVFile(outputsFilepath, outputRecords)
 	if err != nil {
 		log.Printf("error creating output csv file: %v\n", err)
 		os.Exit(1)
 	}
+	log.Println("output CSV file created successfully")
+
 	// Create a CSV file with the failed records
 	if len(failedRecords) == 1 {
-		log.Println("No failed records found")
+		log.Println("no failed records found")
 		os.Exit(0)
 	}
 
@@ -119,7 +123,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Println("Output CSV file created successfully")
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
 }
 
