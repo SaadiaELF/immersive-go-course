@@ -8,6 +8,8 @@ run: outputs
 	docker build --target run -t run .
 	docker run \
 		--mount type=bind,source="$$(pwd)/outputs",target=/outputs \
+		--mount type=bind,source="$$(echo $$HOME)/.aws",target=/root/.aws \
+		--env-file docker_env \
 		--rm run
 
 test: outputs
