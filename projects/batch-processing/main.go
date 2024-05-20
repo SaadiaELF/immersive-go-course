@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -10,6 +11,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
@@ -72,7 +77,14 @@ func main() {
 		if err != nil {
 			log.Printf("error converting image: %v\n", err)
 		}
+		err = UploadImage(dest)
+		if err != nil {
+			log.Printf("error uploading image: %v\n", err)
+		}
+
 	}
+
+	//Upload the images to the aws s3 bucket
 
 	// Log what we did
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
@@ -92,10 +104,10 @@ func ReadCSV(filename string) (records [][]string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(records) == 0 {
 		return nil, fmt.Errorf("no records found in the csv file")
-	}	
+	}
 
 	if len(records[0]) > 1 {
 		return records, fmt.Errorf("more than one column is found in the csv file")
@@ -145,4 +157,57 @@ func (c *Converter) Grayscale(inputFilepath string, outputFilepath string) error
 		"convert", inputFilepath, "-set", "colorspace", "Gray", outputFilepath,
 	})
 	return err
+}
+
+func UploadImage(filename string) error {
+	// Get the AWS region and role ARN from the environment
+	region := os.Getenv("AWS_REGION")
+	awsRoleArn := os.Getenv("AWS_ROLE_ARN")
+	bucket := os.Getenv("AWS_BUCKET")
+	if region == "" || awsRoleArn == "" {
+		return fmt.Errorf("AWS_REGION and AWS_ROLE_ARN environment variables must be set")
+	}
+	// Set up S3 session
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return fmt.Errorf("error creating session: %v\n", err)
+	}
+
+	// Create the credentials from AssumeRoleProvider to assume the role
+	// referenced by the ARN.
+	creds := stscreds.NewCredentials(sess, awsRoleArn)
+
+	// Create service client value configured for credentials
+	// from assumed role.
+	svc := s3.New(sess, &aws.Config{Credentials: creds, Endpoint: aws.String("s3." + region + ".amazonaws.com")})
+
+	// // Upload the image to the s3 bucket
+	bufBytes := getFileBytes(filename)
+	_, err = svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filename),
+		Body:   bytes.NewReader(bufBytes),
+	})
+	if err != nil {
+		return err
+	}
+	// Construct the URL of the uploaded image
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, filename)
+	log.Printf("uploaded image to: %v\n", url)
+	return nil
+}
+
+func getFileBytes(filename string) []byte {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Printf("could not open file: %v", err)
+	}
+	defer file.Close()
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, file); err != nil {
+		log.Printf("could not copy file: %v", err)
+	}
+	return buf.Bytes()
 }
