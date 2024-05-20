@@ -73,7 +73,7 @@ func TestReadCSV(t *testing.T) {
 			records: [][]string{},
 		},
 		{
-			name: "two columns",
+			name: "two columns file",
 			records: [][]string{
 				{"url", "name"},
 				{"foo/bar", "bar"},
