@@ -15,4 +15,4 @@ jobs:
           cache-dependency-path: "projects/docker-cloud/go.sum"
           cache: true
       - name: Test
-        run: make test
+        run: go test ./...
