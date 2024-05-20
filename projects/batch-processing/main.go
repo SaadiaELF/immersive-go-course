@@ -26,8 +26,9 @@ type Converter struct {
 
 func main() {
 	// Accept --input and --output arguments for the images
-	inputFilepath := flag.String("input", "", "A path to an image to be processed")
-	outputFilepath := flag.String("output", "", "A path to where the processed image should be written")
+	inputFilepath := flag.String("input", "", "A path to a CSV file with image URLs to process")
+	outputFilepath := flag.String("output", "", "A path to where the processed records should be written")
+	failedFilepath := flag.String("output-failed", "", "A path to where the failed records should be written")
 	flag.Parse()
 
 	// Ensure that both flags were set
@@ -45,13 +46,14 @@ func main() {
 
 	// Read the CSV file
 	log.Println("Reading input CSV file ... ")
-	filepath := fmt.Sprintf("./inputs/%s", *inputFilepath)
-	records, err := ReadCSV(filepath)
+	inputsFilepath := fmt.Sprintf("./inputs/%s", *inputFilepath)
+	records, err := ReadCSV(inputsFilepath)
 	if err != nil {
 		log.Printf("error: Could not read csv file: %v\n", err)
 	}
 
 	outputRecords := [][]string{{"url", "input", "output", "s3url"}}
+	failedRecords := [][]string{{"url"}}
 
 	// Download the images and process them
 	// Set up imagemagick
@@ -72,6 +74,8 @@ func main() {
 		inputFilename, err := DownloadImage(record[0])
 		if err != nil {
 			log.Printf("error downloading: %v\n", err)
+			failedRecords = append(failedRecords, []string{record[0]})
+			continue
 		}
 
 		// Convert the image to grayscale
@@ -79,24 +83,43 @@ func main() {
 		err = c.Grayscale(inputFilename, outputFilename)
 		if err != nil {
 			log.Printf("error converting image: %v\n", err)
+			failedRecords = append(failedRecords, []string{record[0]})
+			continue
 		}
-
-		//Upload the images to the aws s3 bucket
+		//Upload the images to the aws s3 bucket if no error
 		s3url, err := UploadImage(outputFilename)
 		if err != nil {
 			log.Printf("error uploading image: %v\n", err)
+			failedRecords = append(failedRecords, []string{record[0]})
 		}
+
 		outputRecords = append(outputRecords, []string{record[0], inputFilename, outputFilename, s3url})
+
 	}
 
 	// Create a CSV file with the output records
 	log.Println("Creating output CSV file ... ")
-	_, err = CreateCSVFile(outputRecords)
+	outputsFilepath := fmt.Sprintf("./outputs/%s", *outputFilepath)
+	_, err = CreateCSVFile(outputsFilepath, outputRecords)
 	if err != nil {
 		log.Printf("error creating output csv file: %v\n", err)
 		os.Exit(1)
 	}
-	// Log what we did
+	// Create a CSV file with the failed records
+	if len(failedRecords) == 1 {
+		log.Println("No failed records found")
+		os.Exit(0)
+	}
+
+	log.Println("Creating failed CSV file ... ")
+	failedPath := fmt.Sprintf("./outputs/%s", *failedFilepath)
+	_, err = CreateCSVFile(failedPath, failedRecords)
+	if err != nil {
+		log.Printf("error creating failed csv file: %v\n", err)
+		os.Exit(1)
+	}
+
+	log.Println("Output CSV file created successfully")
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
 }
 
@@ -221,9 +244,9 @@ func getFileBytes(filename string) []byte {
 	return buf.Bytes()
 }
 
-func CreateCSVFile(records [][]string) (string, error) {
+func CreateCSVFile(filepath string, records [][]string) (string, error) {
 	// Create a temporary file
-	file, err := os.Create("./outputs/output.csv")
+	file, err := os.Create(filepath)
 	if err != nil {
 		return "", fmt.Errorf("could not create csv file: %v", err)
 	}
