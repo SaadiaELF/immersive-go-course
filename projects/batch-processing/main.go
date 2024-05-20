@@ -39,9 +39,14 @@ func main() {
 	c := &Converter{
 		cmd: imagick.ConvertImageCommand,
 	}
+
+	// Log what we're going to do
+	log.Printf("processing: %q to %q\n", *inputFilepath, *outputFilepath)
+
 	// Read the CSV file
 	log.Println("Reading input CSV file ... ")
-	records, err := ReadCSV("./inputs/inputs.csv")
+	filepath := fmt.Sprintf("./inputs/%s", *inputFilepath)
+	records, err := ReadCSV(filepath)
 	if err != nil {
 		log.Printf("error: Could not read csv file: %v\n", err)
 	}
@@ -52,9 +57,6 @@ func main() {
 	// Set up imagemagick
 	imagick.Initialize()
 	defer imagick.Terminate()
-
-	// Log what we're going to do
-	log.Printf("processing: %q to %q\n", *inputFilepath, *outputFilepath)
 
 	for i, record := range records {
 		// Check if the first row is the header
@@ -67,14 +69,13 @@ func main() {
 		}
 
 		// Download the image
-		inputFilename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
-		err := DownloadImage(inputFilename, record[0])
+		inputFilename, err := DownloadImage(record[0])
 		if err != nil {
 			log.Printf("error downloading: %v\n", err)
 		}
 
 		// Convert the image to grayscale
-		outputFilename := fmt.Sprintf("%s/img-0%v.jpg", *outputFilepath, i)
+		outputFilename := fmt.Sprintf("/tmp/img-0%v.jpg", i)
 		err = c.Grayscale(inputFilename, outputFilename)
 		if err != nil {
 			log.Printf("error converting image: %v\n", err)
@@ -87,20 +88,21 @@ func main() {
 		}
 		outputRecords = append(outputRecords, []string{record[0], inputFilename, outputFilename, s3url})
 	}
+
 	// Create a CSV file with the output records
 	log.Println("Creating output CSV file ... ")
 	_, err = CreateCSVFile(outputRecords)
 	if err != nil {
 		log.Printf("error creating output csv file: %v\n", err)
+		os.Exit(1)
 	}
-
 	// Log what we did
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
 }
 
-func ReadCSV(filename string) (records [][]string, err error) {
+func ReadCSV(filepath string) (records [][]string, err error) {
 	// Open the file
-	f, err := os.Open(filename)
+	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -124,28 +126,28 @@ func ReadCSV(filename string) (records [][]string, err error) {
 	return records, nil
 }
 
-func DownloadImage(filepath string, url string) error {
+func DownloadImage(url string) (string, error) {
 	// Create empty file
-	out, err := os.Create(filepath)
+	out, err := os.CreateTemp("", "img-*.jpg")
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
-
+	filename := out.Name()
 	// Get the image
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return filename, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get the image: %v", resp.Status)
+		return filename, fmt.Errorf("failed to get the image: %v", resp.Status)
 	}
 
 	// Check if it's an image
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "image/") {
-		return fmt.Errorf("invalid image type: %v", contentType)
+		return filename, fmt.Errorf("invalid image type: %v", contentType)
 	}
 
 	defer resp.Body.Close()
@@ -153,9 +155,9 @@ func DownloadImage(filepath string, url string) error {
 	// Write the image to the file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		return filename, err
 	}
-	return nil
+	return filename, nil
 }
 
 func (c *Converter) Grayscale(inputFilepath string, outputFilepath string) error {
