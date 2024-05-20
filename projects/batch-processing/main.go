@@ -46,6 +46,8 @@ func main() {
 		log.Printf("error: Could not read csv file: %v\n", err)
 	}
 
+	outputRecords := [][]string{{"url", "input", "output", "s3url"}}
+
 	// Download the images and process them
 	// Set up imagemagick
 	imagick.Initialize()
@@ -65,26 +67,32 @@ func main() {
 		}
 
 		// Download the image
-		filename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
-		err := DownloadImage(filename, record[0])
+		inputFilename := fmt.Sprintf("%s/img-0%v.jpg", *inputFilepath, i)
+		err := DownloadImage(inputFilename, record[0])
 		if err != nil {
 			log.Printf("error downloading: %v\n", err)
 		}
 
 		// Convert the image to grayscale
-		dest := fmt.Sprintf("%s/img-0%v.jpg", *outputFilepath, i)
-		err = c.Grayscale(filename, dest)
+		outputFilename := fmt.Sprintf("%s/img-0%v.jpg", *outputFilepath, i)
+		err = c.Grayscale(inputFilename, outputFilename)
 		if err != nil {
 			log.Printf("error converting image: %v\n", err)
 		}
-		err = UploadImage(dest)
+
+		//Upload the images to the aws s3 bucket
+		s3url, err := UploadImage(outputFilename)
 		if err != nil {
 			log.Printf("error uploading image: %v\n", err)
 		}
-
+		outputRecords = append(outputRecords, []string{record[0], inputFilename, outputFilename, s3url})
 	}
-
-	//Upload the images to the aws s3 bucket
+	// Create a CSV file with the output records
+	log.Println("Creating output CSV file ... ")
+	_, err = CreateCSVFile(outputRecords)
+	if err != nil {
+		log.Printf("error creating output csv file: %v\n", err)
+	}
 
 	// Log what we did
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
@@ -159,20 +167,20 @@ func (c *Converter) Grayscale(inputFilepath string, outputFilepath string) error
 	return err
 }
 
-func UploadImage(filename string) error {
+func UploadImage(filename string) (string, error) {
 	// Get the AWS region and role ARN from the environment
 	region := os.Getenv("AWS_REGION")
 	awsRoleArn := os.Getenv("AWS_ROLE_ARN")
 	bucket := os.Getenv("AWS_BUCKET")
 	if region == "" || awsRoleArn == "" {
-		return fmt.Errorf("AWS_REGION and AWS_ROLE_ARN environment variables must be set")
+		return "", fmt.Errorf("AWS_REGION and AWS_ROLE_ARN environment variables must be set")
 	}
 	// Set up S3 session
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
 	if err != nil {
-		return fmt.Errorf("error creating session: %v\n", err)
+		return "", fmt.Errorf("error creating session: %v\n", err)
 	}
 
 	// Create the credentials from AssumeRoleProvider to assume the role
@@ -191,12 +199,11 @@ func UploadImage(filename string) error {
 		Body:   bytes.NewReader(bufBytes),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Construct the URL of the uploaded image
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, filename)
-	log.Printf("uploaded image to: %v\n", url)
-	return nil
+	return url, nil
 }
 
 func getFileBytes(filename string) []byte {
@@ -210,4 +217,22 @@ func getFileBytes(filename string) []byte {
 		log.Printf("could not copy file: %v", err)
 	}
 	return buf.Bytes()
+}
+
+func CreateCSVFile(records [][]string) (string, error) {
+	// Create a temporary file
+	file, err := os.Create("./outputs/output.csv")
+	if err != nil {
+		return "", fmt.Errorf("could not create csv file: %v", err)
+	}
+	defer file.Close()
+
+	// Create a CSV writer and write the records to the file
+	writer := csv.NewWriter(file)
+	err = writer.WriteAll(records)
+	if err != nil {
+		return "", fmt.Errorf("could not write records to CSV: %v", err)
+	}
+
+	return file.Name(), nil
 }
