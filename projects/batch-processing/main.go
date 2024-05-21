@@ -24,6 +24,13 @@ type Converter struct {
 	cmd ConvertImageCommand
 }
 
+type ImageUploader struct {
+	region     string
+	awsRoleArn string
+	bucket     string
+	s3         *s3.S3
+}
+
 func main() {
 	inputFilepath := flag.String("input", "", "A path to a CSV file with image URLs to process")
 	outputFilepath := flag.String("output", "", "A path to where the processed records should be written")
@@ -33,6 +40,20 @@ func main() {
 	if *inputFilepath == "" || *outputFilepath == "" || *failedFilepath == "" {
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	// Read and validate environment variables
+	region := os.Getenv("AWS_REGION")
+	roleArn := os.Getenv("AWS_ROLE_ARN")
+	bucket := os.Getenv("AWS_BUCKET")
+	if region == "" || roleArn == "" || bucket == "" {
+		log.Println("AWS_REGION, AWS_ROLE_ARN and AWS_BUCKET environment variables must be set")
+	}
+
+	// Initialise the ImageUploader
+	uploader, err := NewImageUploader(region, roleArn, bucket)
+	if err != nil {
+		log.Printf("could not create image uploader: %v", err)
 	}
 
 	// Build a Converter struct that will use imagick
@@ -80,7 +101,7 @@ func main() {
 	imagick.Initialize()
 	defer imagick.Terminate()
 
-	ProcessImage(records, c, outputWriter, failedWriter)
+	ProcessImage(records, c, uploader, outputWriter, failedWriter)
 
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
 }
@@ -119,7 +140,7 @@ func WriteHeader(writer *csv.Writer, header []string) error {
 	return nil
 }
 
-func ProcessImage(records [][]string, c *Converter, outputWriter, failedWriter *csv.Writer) {
+func ProcessImage(records [][]string, c *Converter, uploader *ImageUploader, outputWriter, failedWriter *csv.Writer) {
 	for i := 1; i < len(records); i++ {
 		// Download the image
 		inputFilename, err := DownloadImage(records[i][0])
@@ -139,7 +160,7 @@ func ProcessImage(records [][]string, c *Converter, outputWriter, failedWriter *
 		}
 
 		//Upload the images to the aws s3 bucket if no error
-		s3url, err := UploadImage(outputFilename)
+		s3url, err := uploader.UploadImage(outputFilename)
 		if err != nil {
 			log.Printf("error uploading image: %v\n", err)
 			writeFailedRecord(failedWriter, records[i][0])
@@ -201,20 +222,13 @@ func (c *Converter) Grayscale(inputFilepath string, outputFilepath string) error
 	return err
 }
 
-func UploadImage(filename string) (string, error) {
-	// Get the AWS region and role ARN from the environment
-	region := os.Getenv("AWS_REGION")
-	awsRoleArn := os.Getenv("AWS_ROLE_ARN")
-	bucket := os.Getenv("AWS_BUCKET")
-	if region == "" || awsRoleArn == "" {
-		return "", fmt.Errorf("AWS_REGION and AWS_ROLE_ARN environment variables must be set")
-	}
+func NewImageUploader(region, awsRoleArn, bucket string) (*ImageUploader, error) {
 	// Set up S3 session
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
 	if err != nil {
-		return "", fmt.Errorf("error creating session: %v\n", err)
+		return nil, fmt.Errorf("error creating session: %v\n", err)
 	}
 
 	// Create the credentials from AssumeRoleProvider to assume the role
@@ -225,10 +239,20 @@ func UploadImage(filename string) (string, error) {
 	// from assumed role.
 	svc := s3.New(sess, &aws.Config{Credentials: creds, Endpoint: aws.String("s3." + region + ".amazonaws.com")})
 
-	// // Upload the image to the s3 bucket
+	return &ImageUploader{
+		region:     region,
+		awsRoleArn: awsRoleArn,
+		bucket:     bucket,
+		s3:         svc,
+	}, nil
+
+}
+
+func (u *ImageUploader) UploadImage(filename string) (string, error) {
+	// Upload the image to the S3 bucket
 	bufBytes := getFileBytes(filename)
-	_, err = svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(bucket),
+	_, err := u.s3.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(u.bucket),
 		Key:    aws.String(filename),
 		Body:   bytes.NewReader(bufBytes),
 	})
@@ -236,7 +260,7 @@ func UploadImage(filename string) (string, error) {
 		return "", err
 	}
 	// Construct the URL of the uploaded image
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com%s", bucket, region, filename)
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.bucket, u.region, filename)
 	return url, nil
 }
 
