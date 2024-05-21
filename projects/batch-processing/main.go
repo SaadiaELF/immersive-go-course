@@ -59,21 +59,12 @@ func main() {
 	imagick.Initialize()
 	defer imagick.Terminate()
 
-	for i, record := range records {
-		// Check if the first row is the header
-		if i == 0 {
-			if record[0] == "url" {
-				continue
-			} else {
-				log.Fatalln("no url header found in the csv file")
-			}
-		}
-
+	for i := 1; i < len(records); i++ {
 		// Download the image
-		inputFilename, err := DownloadImage(record[0])
+		inputFilename, err := DownloadImage(records[i][0])
 		if err != nil {
 			log.Printf("error downloading: %v\n", err)
-			failedRecords = append(failedRecords, []string{record[0]})
+			failedRecords = append(failedRecords, []string{records[i][0]})
 			continue
 		}
 
@@ -82,7 +73,7 @@ func main() {
 		err = c.Grayscale(inputFilename, outputFilename)
 		if err != nil {
 			log.Printf("error converting image: %v\n", err)
-			failedRecords = append(failedRecords, []string{record[0]})
+			failedRecords = append(failedRecords, []string{records[i][0]})
 			continue
 		}
 
@@ -90,10 +81,10 @@ func main() {
 		s3url, err := UploadImage(outputFilename)
 		if err != nil {
 			log.Printf("error uploading image: %v\n", err)
-			failedRecords = append(failedRecords, []string{record[0]})
+			failedRecords = append(failedRecords, []string{records[i][0]})
 		}
 
-		outputRecords = append(outputRecords, []string{record[0], inputFilename, outputFilename, s3url})
+		outputRecords = append(outputRecords, []string{records[i][0], inputFilename, outputFilename, s3url})
 	}
 
 	// Create a CSV file with the output records
@@ -139,7 +130,9 @@ func ReadCSV(filepath string) (records [][]string, err error) {
 	if len(records) == 0 {
 		return nil, fmt.Errorf("no records found in the csv file")
 	}
-
+	if records[0][0] != "url" {
+		return nil, fmt.Errorf("no url header found in the csv file")
+	}
 	if len(records[0]) > 1 {
 		return records, fmt.Errorf("more than one column is found in the csv file")
 	}
