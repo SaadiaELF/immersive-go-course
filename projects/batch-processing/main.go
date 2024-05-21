@@ -25,13 +25,11 @@ type Converter struct {
 }
 
 func main() {
-	// Define the flags for the input and output CSV files
 	inputFilepath := flag.String("input", "", "A path to a CSV file with image URLs to process")
 	outputFilepath := flag.String("output", "", "A path to where the processed records should be written")
 	failedFilepath := flag.String("output-failed", "", "A path to where the failed records should be written")
 	flag.Parse()
 
-	// Ensure that both flags were set
 	if *inputFilepath == "" || *outputFilepath == "" || *failedFilepath == "" {
 		flag.Usage()
 		os.Exit(1)
@@ -45,7 +43,6 @@ func main() {
 	// Log what we're going to do
 	log.Printf("processing: %q to %q\n", *inputFilepath, *outputFilepath)
 
-	// Read the CSV file
 	log.Println("reading input CSV file ... ")
 	inputsFilepath := fmt.Sprintf("./inputs/%s", *inputFilepath)
 	records, err := ReadCSV(inputsFilepath)
@@ -127,14 +124,12 @@ func main() {
 }
 
 func ReadCSV(filepath string) (records [][]string, err error) {
-	// Open the file
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	// Read the CSV file
 	r := csv.NewReader(f)
 	records, err = r.ReadAll()
 	if err != nil {
@@ -160,12 +155,12 @@ func DownloadImage(url string) (string, error) {
 	}
 	defer out.Close()
 	filename := out.Name()
+
 	// Get the image
 	resp, err := http.Get(url)
 	if err != nil {
 		return filename, err
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		return filename, fmt.Errorf("failed to get the image: %v", resp.Status)
 	}
@@ -248,7 +243,6 @@ func getFileBytes(filename string) []byte {
 }
 
 func CreateCSVFile(filepath string, records [][]string) (string, error) {
-	// Create a temporary file
 	file, err := os.Create(filepath)
 	if err != nil {
 		return "", fmt.Errorf("could not create csv file: %v", err)
