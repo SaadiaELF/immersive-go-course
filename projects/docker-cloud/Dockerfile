@@ -19,7 +19,6 @@ FROM debian:bullseye-slim
 WORKDIR /app
 
 COPY --from=builder /app/out/main /app/main
-COPY --from=builder /app/.env ./
 
 EXPOSE 80
 CMD ["/app/main"]
