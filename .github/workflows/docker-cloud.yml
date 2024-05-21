@@ -1,4 +1,4 @@
-name: docker-cloud tests
+name: docker-cloud test and publish
 on: [push]
 defaults:
   run:
@@ -16,3 +16,25 @@ jobs:
           cache: true
       - name: Test
         run: go test ./...
+  publish:
+    permissions:
+      id-token: write
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: arn:aws:iam::905418219618:role/GitHubActionECRPublicPushImage
+        aws-region: us-west-2
+    - name: Login to Amazon ECR Public
+      id: login-ecr-public
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registry-type: public
+    - name: Build, tag, and push docker image to Amazon ECR Public
+      env:
+        REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+        REGISTRY_ALIAS: f7v8c1z0
+        REPOSITORY: immersive-go-course/docker-cloud
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
