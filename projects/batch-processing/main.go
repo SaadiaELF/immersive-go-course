@@ -50,66 +50,37 @@ func main() {
 		log.Printf("error: Could not read csv file: %v\n", err)
 	}
 
-	// Create the output records and failed records
-	outputRecords := [][]string{{"url", "input", "output", "s3url"}}
-	failedRecords := [][]string{{"url"}}
+	// Create csv file for output records
+	log.Println("creating output CSV file ... ")
+	outputsFilepath := fmt.Sprintf("./outputs/%s", *outputFilepath)
+	outputFile, err := os.Create(outputsFilepath)
+	if err != nil {
+		log.Fatalf("could not create csv file: %v", err)
+	}
+	defer outputFile.Close()
+	outputWriter := csv.NewWriter(outputFile)
+	defer outputWriter.Flush()
+
+	// Create csv file for failed records
+	log.Println("Creating failed CSV file ... ")
+	failedPath := fmt.Sprintf("./outputs/%s", *failedFilepath)
+	failedFile, err := os.Create(failedPath)
+	if err != nil {
+		log.Fatalf("could not create csv file: %v", err)
+	}
+	defer failedFile.Close()
+	failedWriter := csv.NewWriter(failedFile)
+	defer failedWriter.Flush()
+
+	WriteHeader(outputWriter, []string{"url", "input", "output", "s3url"})
+	WriteHeader(failedWriter, []string{"url"})
 
 	// Download the images and process them
 	// Set up imagemagick
 	imagick.Initialize()
 	defer imagick.Terminate()
 
-	for i := 1; i < len(records); i++ {
-		// Download the image
-		inputFilename, err := DownloadImage(records[i][0])
-		if err != nil {
-			log.Printf("error downloading: %v\n", err)
-			failedRecords = append(failedRecords, []string{records[i][0]})
-			continue
-		}
-
-		// Convert the image to grayscale
-		outputFilename := fmt.Sprintf("/tmp/img-0%v.jpg", i)
-		err = c.Grayscale(inputFilename, outputFilename)
-		if err != nil {
-			log.Printf("error converting image: %v\n", err)
-			failedRecords = append(failedRecords, []string{records[i][0]})
-			continue
-		}
-
-		//Upload the images to the aws s3 bucket if no error
-		s3url, err := UploadImage(outputFilename)
-		if err != nil {
-			log.Printf("error uploading image: %v\n", err)
-			failedRecords = append(failedRecords, []string{records[i][0]})
-		}
-
-		outputRecords = append(outputRecords, []string{records[i][0], inputFilename, outputFilename, s3url})
-	}
-
-	// Create a CSV file with the output records
-	log.Println("creating output CSV file ... ")
-	outputsFilepath := fmt.Sprintf("./outputs/%s", *outputFilepath)
-	_, err = CreateCSVFile(outputsFilepath, outputRecords)
-	if err != nil {
-		log.Printf("error creating output csv file: %v\n", err)
-		os.Exit(1)
-	}
-	log.Println("output CSV file created successfully")
-
-	// Create a CSV file with the failed records
-	if len(failedRecords) == 1 {
-		log.Println("no failed records found")
-		os.Exit(0)
-	}
-
-	log.Println("Creating failed CSV file ... ")
-	failedPath := fmt.Sprintf("./outputs/%s", *failedFilepath)
-	_, err = CreateCSVFile(failedPath, failedRecords)
-	if err != nil {
-		log.Printf("error creating failed csv file: %v\n", err)
-		os.Exit(1)
-	}
+	ProcessImage(records, c, outputWriter, failedWriter)
 
 	log.Printf("processed: %q to %q\n", *inputFilepath, *outputFilepath)
 }
@@ -138,6 +109,53 @@ func ReadCSV(filepath string) (records [][]string, err error) {
 	}
 
 	return records, nil
+}
+
+func WriteHeader(writer *csv.Writer, header []string) error {
+	err := writer.Write(header)
+	if err != nil {
+		return fmt.Errorf("could not write header to csv file: %v", err)
+	}
+	return nil
+}
+
+func ProcessImage(records [][]string, c *Converter, outputWriter, failedWriter *csv.Writer) {
+	for i := 1; i < len(records); i++ {
+		// Download the image
+		inputFilename, err := DownloadImage(records[i][0])
+		if err != nil {
+			log.Printf("error downloading: %v\n", err)
+			writeFailedRecord(failedWriter, records[i][0])
+			continue
+		}
+
+		// Convert the image to grayscale
+		outputFilename := fmt.Sprintf("/tmp/img-0%v.jpg", i)
+		err = c.Grayscale(inputFilename, outputFilename)
+		if err != nil {
+			log.Printf("error converting image: %v\n", err)
+			writeFailedRecord(failedWriter, records[i][0])
+			continue
+		}
+
+		//Upload the images to the aws s3 bucket if no error
+		s3url, err := UploadImage(outputFilename)
+		if err != nil {
+			log.Printf("error uploading image: %v\n", err)
+			writeFailedRecord(failedWriter, records[i][0])
+		}
+
+		// Write the record to the output csv file
+		outputRecord := []string{records[i][0], inputFilename, outputFilename, s3url}
+		if err := outputWriter.Write(outputRecord); err != nil {
+			log.Printf("could not write record to csv file: %v", err)
+		}
+	}
+}
+func writeFailedRecord(writer *csv.Writer, url string) {
+	if err := writer.Write([]string{url}); err != nil {
+		log.Printf("could not write record to failed csv file: %v", err)
+	}
 }
 
 func DownloadImage(url string) (string, error) {
@@ -218,7 +236,7 @@ func UploadImage(filename string) (string, error) {
 		return "", err
 	}
 	// Construct the URL of the uploaded image
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, filename)
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com%s", bucket, region, filename)
 	return url, nil
 }
 
@@ -233,21 +251,4 @@ func getFileBytes(filename string) []byte {
 		log.Printf("could not copy file: %v", err)
 	}
 	return buf.Bytes()
-}
-
-func CreateCSVFile(filepath string, records [][]string) (string, error) {
-	file, err := os.Create(filepath)
-	if err != nil {
-		return "", fmt.Errorf("could not create csv file: %v", err)
-	}
-	defer file.Close()
-
-	// Create a CSV writer and write the records to the file
-	writer := csv.NewWriter(file)
-	err = writer.WriteAll(records)
-	if err != nil {
-		return "", fmt.Errorf("could not write records to CSV: %v", err)
-	}
-
-	return file.Name(), nil
 }
