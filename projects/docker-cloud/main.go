@@ -23,7 +23,7 @@ func main() {
 	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("pong\n"))
+		w.Write([]byte("pong pong ...\n"))
 	})
 
 	fmt.Printf("Listening on port %v...", port)
