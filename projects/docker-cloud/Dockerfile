@@ -9,7 +9,6 @@ COPY go.sum ./
 
 RUN go mod download
 
-COPY .env ./
 COPY main.go ./
 
 RUN mkdir -p out
