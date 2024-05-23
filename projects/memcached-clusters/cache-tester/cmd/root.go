@@ -21,12 +21,14 @@ func Execute() {
 
 	// Connect to mcrouter
 	mcr := memcache.New("localhost:" + *mcrouter)
+	defer mcr.Close()
 
 	// Connect to memcached servers
 	ports := strings.Split(*memcacheds, ",")
 	mcs := make([]*memcache.Client, 0)
-	for _, port := range ports {
+	for i, port := range ports {
 		mcs = append(mcs, memcache.New("localhost:"+port))
+		defer mcs[i].Close()
 	}
 
 	// Set a key in mcrouter
@@ -56,6 +58,7 @@ func Execute() {
 	if allItemsEqual(items) {
 		fmt.Println("Cache typology : replicated")
 	}
+
 }
 
 func allItemsEqual(items []*memcache.Item) bool {
