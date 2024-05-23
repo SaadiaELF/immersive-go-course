@@ -56,7 +56,7 @@ func Execute() {
 	}
 
 	if allItemsEqual(items) {
-		fmt.Println("Cache typology : replicated")
+		fmt.Println("Memcached cluster typology : replicated")
 	}
 
 }
