@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/internal/scheduler"
-	"kafka-cron/producer/internal/utils"
+	"kafka-cron/utils"
 	"log"
 )
 
@@ -20,17 +20,19 @@ func main() {
 		log.Fatalf("error parsing the configuration file: %v", err)
 	}
 
+	topic, brokers := utils.Args()
+
 	// Create the Kafka producer
-	p, err := producer.Producer()
+	p, err := producer.Producer(brokers)
 	if err != nil {
 		fmt.Printf("Error creating Kafka producer: %v", err)
 	}
 
 	// Create the Kafka topic
-	err = producer.CreateTopic(p, "cron-topic")
+	err = producer.CreateTopic(p, topic)
 	if err != nil {
 		fmt.Printf("Error creating Kafka topic: %v", err)
 	}
-	scheduler.Scheduler(p, jobs)
+	scheduler.Scheduler(p, jobs, topic)
 
 }
