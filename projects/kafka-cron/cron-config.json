@@ -1,0 +1,14 @@
+ [
+  {
+    "name": "cron-job-A",
+    "schedule": "*/5 * * * * *",
+    "command": "echo 'Hello, world!'",
+    "description": "A simple cron job that runs every minute."
+  },
+  {
+    "name": "cron-job-B",
+    "schedule": "*/7 * * * * *",
+    "command": "echo 'Goodbye, world!'",
+    "description": "A simple cron job that runs every 2 minutes."
+  }
+]
