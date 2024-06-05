@@ -4,9 +4,9 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func Consumer() (*kafka.Consumer, error) {
+func Consumer(brokers string) (*kafka.Consumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
+		"bootstrap.servers": brokers,
 		"group.id":          "myGroup",
 	})
 	if err != nil {
