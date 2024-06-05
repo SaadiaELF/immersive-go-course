@@ -2,45 +2,34 @@ package scheduler
 
 import (
 	"fmt"
+	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/pkg/models"
-	"os"
-	"os/exec"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/robfig/cron/v3"
 )
 
-func Scheduler(jobs []models.CronJob) {
+func Scheduler(p *kafka.Producer, jobs []models.CronJob) error {
 	c := cron.New(cron.WithSeconds())
 
 	// Schedule the jobs
 	for _, job := range jobs {
 		_, err := c.AddFunc(job.Schedule, func() {
-			err := ExecuteJob(job)
+			err := producer.ProduceMessage(p, "cron-topic", job)
 			if err != nil {
-				fmt.Println("error executing job:", job.Name)
+				fmt.Printf("error executing job: %s", job.Name)
 			}
 		})
 		if err != nil {
-			fmt.Println("error scheduling job:", job.Name)
+			return fmt.Errorf("error executing job: %s", job.Name)
 		}
 	}
 
-	// Start the Cron job scheduler
 	c.Start()
 
-	// Wait for the Cron job to run
 	time.Sleep(5 * time.Minute)
 
-	// Stop the Cron job scheduler
 	c.Stop()
-
-}
-
-func ExecuteJob(job models.CronJob) error {
-	cmd := exec.Command("sh", "-c", job.Command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	fmt.Println("Executing job:", job.Name)
-	return cmd.Run()
+	return nil
 }
