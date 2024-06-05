@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"kafka-cron/consumer/executor"
 	"kafka-cron/consumer/internal/consumer"
+	"kafka-cron/consumer/internal/executor"
 	"kafka-cron/pkg/models"
 	"kafka-cron/utils"
 	"os"
