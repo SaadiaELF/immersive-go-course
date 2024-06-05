@@ -3,7 +3,7 @@ package producer
 import (
 	"context"
 	"fmt"
-	"kafka-cron/producer/pkg/models"
+	"kafka-cron/pkg/models"
 	"time"
 
 	"encoding/json"
@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func Producer() (*kafka.Producer, error) {
+func Producer(brokers string) (*kafka.Producer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
+		"bootstrap.servers": brokers,
 	},
 	)
 	if err != nil {
