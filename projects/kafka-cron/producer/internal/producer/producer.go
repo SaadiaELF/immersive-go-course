@@ -66,19 +66,14 @@ func CreateTopic(p *kafka.Producer, topic string) error {
 
 func ProduceMessage(p *kafka.Producer, topic string, job models.CronJob) error {
 	deliveryChan := make(chan kafka.Event)
-	msg := models.Message{
-		Id:       uuid.New(),
-		Command:  job.Command,
-		Schedule: job.Schedule,
-	}
-	message, err := json.Marshal(msg)
+	message, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %v", err)
 	}
 
 	err = p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Key:            []byte(msg.Id.String()),
+		Key:            []byte(uuid.New().String()),
 		Value:          []byte(message),
 	}, deliveryChan)
 	if err != nil {
