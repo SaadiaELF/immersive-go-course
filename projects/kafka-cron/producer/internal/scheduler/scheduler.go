@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"fmt"
-	"kafka-cron/producer/internal/producer"
 	"kafka-cron/pkg/models"
+	"kafka-cron/producer/internal/producer"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
