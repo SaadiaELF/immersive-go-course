@@ -27,7 +27,7 @@ func main() {
 	for {
 		msg, err := consumer.ReadMessage(-1)
 		if err == nil {
-			fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+			fmt.Printf("Message on %s: ", msg.TopicPartition)
 			var job models.CronJob
 			err = json.Unmarshal(msg.Value, &job)
 			if err != nil {
