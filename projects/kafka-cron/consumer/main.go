@@ -34,7 +34,7 @@ func main() {
 				fmt.Printf("failed to unmarshal message: %s\n", err)
 				continue
 			}
-			executor.Executor(job)
+			executor.Execute(job)
 		} else {
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
 		}
