@@ -28,6 +28,7 @@ func CreateTopic(p *kafka.Producer, topic string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create new admin client from producer: %w", err)
 	}
+	defer a.Close()
 	// Contexts are used to abort or limit the amount of time
 	// the Admin call blocks waiting for a result.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -57,7 +58,7 @@ func CreateTopic(p *kafka.Producer, topic string) error {
 		}
 		fmt.Printf("%v\n", result)
 	}
-	a.Close()
+
 	return nil
 }
 
