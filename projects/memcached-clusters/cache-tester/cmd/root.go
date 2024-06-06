@@ -46,13 +46,11 @@ func Execute() {
 		if err != nil {
 			fmt.Printf("Error getting key from memcached server %v: %v\n", i, err)
 		}
+		if err == memcache.ErrCacheMiss {
+			fmt.Println("Cache typology: sharded")
+			return
+		}
 		items = append(items, item)
-
-	}
-
-	if err == memcache.ErrCacheMiss && len(items) != 0 {
-		fmt.Println("Cache typology: sharded")
-		return
 	}
 
 	if allItemsEqual(items) {
