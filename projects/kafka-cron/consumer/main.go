@@ -31,10 +31,13 @@ func main() {
 			var job models.CronJob
 			err = json.Unmarshal(msg.Value, &job)
 			if err != nil {
-				fmt.Printf("failed to unmarshal message: %s\n", err)
+				fmt.Printf("failed to unmarshal message: %v\n", err)
 				continue
 			}
-			executor.Execute(job)
+			err = executor.Execute(job)
+			if err != nil {
+				fmt.Printf("failed to execute job: %v\n", err)
+			}
 		} else {
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
 		}
