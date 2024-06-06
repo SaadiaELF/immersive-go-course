@@ -21,7 +21,7 @@ func TestRoutes(t *testing.T) {
 		{
 			name:     "ping",
 			endpoint: "/ping",
-			expected: "pong\n",
+			expected: "pong pong ...\n",
 		},
 	}
 	for _, tc := range testcases {
