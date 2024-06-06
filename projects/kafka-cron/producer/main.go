@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"kafka-cron/pkg/models"
 	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/utils"
@@ -20,19 +20,59 @@ func main() {
 		log.Fatalf("error parsing the configuration file: %v", err)
 	}
 
-	topic, brokers := utils.Args()
+	topic1, topic2, brokers := utils.Args()
 
 	// Create the Kafka producer
 	p, err := producer.Producer(brokers)
 	if err != nil {
-		fmt.Printf("Error creating Kafka producer: %v", err)
+		log.Fatalf("Error creating Kafka producer: %v", err)
+
 	}
 
-	// Create the Kafka topic
-	err = producer.CreateTopic(p, topic)
+	// Create the Kafka topics
+	err = producer.CreateTopic(p, topic1)
 	if err != nil {
-		fmt.Printf("Error creating Kafka topic: %v", err)
+		log.Printf("Error creating Kafka topic1: %v", err)
 	}
-	scheduler.Scheduler(p, jobs, topic)
+	err = producer.CreateTopic(p, topic2)
+	if err != nil {
+		log.Printf("Error creating Kafka topic2: %v", err)
+	}
+
+	// Schedule the jobs
+	clusterAJobs := []models.CronJob{}
+	clusterBJobs := []models.CronJob{}
+
+	for _, job := range jobs {
+		switch job.Cluster {
+		case "cluster-a":
+			clusterAJobs = append(clusterAJobs, job)
+		case "cluster-b":
+			clusterBJobs = append(clusterBJobs, job)
+		default:
+			log.Printf("Warning: Job %s has an unknown cluster %s", job.Name, job.Cluster)
+		}
+	}
+
+	done := make(chan bool)
+
+	go func() {
+		err := scheduler.Scheduler(p, clusterAJobs, topic1)
+		if err != nil {
+			log.Printf("Error scheduling jobs for cluster a: %v", err)
+		}
+	}()
+
+	go func() {
+		err = scheduler.Scheduler(p, clusterBJobs, topic2)
+		if err != nil {
+			log.Printf("Error scheduling jobs for cluster b:  %v", err)
+		}
+	}()
+
+	<-done
+
+	// Close the producer
+	p.Close()
 
 }
