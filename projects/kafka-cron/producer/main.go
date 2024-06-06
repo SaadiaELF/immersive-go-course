@@ -6,6 +6,7 @@ import (
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/utils"
 	"log"
+	"time"
 )
 
 func main() {
@@ -33,6 +34,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error creating Kafka topic: %v", err)
 	}
-	scheduler.Scheduler(p, jobs, topic)
+	scheduler.Scheduler(p, jobs, topic, 5*time.Minute)
 
 }
