@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"kafka-cron/consumer/internal/consumer"
 	"kafka-cron/consumer/internal/executor"
+	"kafka-cron/consumer/utils"
 	"kafka-cron/pkg/models"
-	"kafka-cron/utils"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -14,7 +14,6 @@ import (
 
 func main() {
 
-	// Get the topics and brokers from utils.Args
 	topic1, topic2, brokers, cluster := utils.Args()
 
 	var topic string
