@@ -6,6 +6,7 @@ import (
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/utils"
 	"log"
+	"sync"
 )
 
 func main() {
@@ -54,9 +55,11 @@ func main() {
 		}
 	}
 
-	done := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
 		err := scheduler.Scheduler(p, clusterAJobs, topic1)
 		if err != nil {
 			log.Printf("Error scheduling jobs for cluster a: %v", err)
@@ -64,13 +67,14 @@ func main() {
 	}()
 
 	go func() {
+		defer wg.Done()
 		err = scheduler.Scheduler(p, clusterBJobs, topic2)
 		if err != nil {
 			log.Printf("Error scheduling jobs for cluster b:  %v", err)
 		}
 	}()
 
-	<-done
+	wg.Wait()
 
 	// Close the producer
 	p.Close()
