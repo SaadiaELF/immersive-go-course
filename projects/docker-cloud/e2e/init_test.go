@@ -38,8 +38,6 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	code := m.Run()
-
 	if err = pool.Retry(func() error {
 		fmt.Println("Checking API connection...")
 		_, err := http.Get("http://localhost:80/")
@@ -50,6 +48,8 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		fmt.Printf("could not start resource: %v", err)
 	}
+
+	code := m.Run()
 
 	// When we are done, kill and remove the container
 	if err := pool.Purge(resource); err != nil {
