@@ -4,25 +4,19 @@ import (
 	"kafka-cron/pkg/models"
 	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/internal/scheduler"
-	"kafka-cron/utils"
+	"kafka-cron/producer/utils"
 	"log"
 	"sync"
 	"time"
 )
 
 func main() {
-	// Read and parse the configuration file
-	data, err := utils.ReadConfig()
-	if err != nil {
-		log.Fatalf("error reading the configuration file: %v", err)
-	}
+	topic1, topic2, brokers, cluster := utils.Args()
 
-	jobs, err := utils.ParseConfig(data)
+	jobs, err := utils.ParseConfig(cluster)
 	if err != nil {
 		log.Fatalf("error parsing the configuration file: %v", err)
 	}
-
-	topic1, topic2, brokers, _ := utils.Args()
 
 	// Create the Kafka producer
 	p, err := producer.Producer(brokers)
@@ -52,7 +46,7 @@ func main() {
 		case "cluster-b":
 			clusterBJobs = append(clusterBJobs, job)
 		default:
-			log.Printf("Warning: Job %s has an unknown cluster %s", job.Name, job.Cluster)
+			log.Printf("Warning: Jobs has an unknown cluster %s", job.Cluster)
 		}
 	}
 
