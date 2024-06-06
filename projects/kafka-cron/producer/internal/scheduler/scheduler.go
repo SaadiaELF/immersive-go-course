@@ -22,7 +22,7 @@ func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic string) error {
 			}
 		})
 		if err != nil {
-			return fmt.Errorf("error scheduling job: %v", err)
+			return fmt.Errorf("error scheduling job: %w", err)
 		}
 	}
 
