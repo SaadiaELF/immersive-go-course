@@ -10,7 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic string) error {
+func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic string, duration time.Duration) error {
 	c := cron.New(cron.WithSeconds())
 
 	// Schedule the jobs
@@ -22,13 +22,13 @@ func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic string) error {
 			}
 		})
 		if err != nil {
-			return fmt.Errorf("error scheduling job: %v", err)
+			return fmt.Errorf("error scheduling job: %w", err)
 		}
 	}
 
 	c.Start()
 
-	time.Sleep(5 * time.Minute)
+	time.Sleep(duration)
 
 	c.Stop()
 	return nil
