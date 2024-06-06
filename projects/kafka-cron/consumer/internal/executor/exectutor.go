@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func Executor(job models.CronJob) error {
+func Execute(job models.CronJob) error {
 	cmd := exec.Command("sh", "-c", job.Command)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
