@@ -13,12 +13,22 @@ import (
 )
 
 func main() {
-	topic1, topic2, brokers := utils.Args()
-	consumer1, err := initializeConsumer(brokers, topic1)
-	if err != nil {
-		fmt.Printf("failed to initialise consumer: %s\n", err)
+
+	// Get the topics and brokers from utils.Args
+	topic1, topic2, brokers, cluster := utils.Args()
+
+	var topic string
+	switch cluster {
+	case "cluster-a":
+		topic = topic1
+	case "cluster-b":
+		topic = topic2
+	default:
+		fmt.Printf("Invalid cluster specified: %s. Use 'cluster-a' or 'cluster-b'.\n", cluster)
+		return
 	}
-	consumer2, err := initializeConsumer(brokers, topic2)
+
+	consumer, err := initializeConsumer(brokers, topic)
 	if err != nil {
 		fmt.Printf("failed to initialise consumer: %s\n", err)
 	}
@@ -28,12 +38,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		processMessages(consumer1)
-	}()
-
-	go func() {
-		defer wg.Done()
-		processMessages(consumer2)
+		processMessages(consumer)
 	}()
 	wg.Wait()
 }
