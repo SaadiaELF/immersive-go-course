@@ -14,13 +14,13 @@ func main() {
 	topic, brokers := utils.Args()
 	consumer, err := consumer.Consumer(brokers)
 	if err != nil {
-		fmt.Printf("failed to create consumer: %s\n", err)
+		fmt.Printf("failed to create consumer: %v\n", err)
 		os.Exit(1)
 	}
 
 	err = consumer.Subscribe(topic, nil)
 	if err != nil {
-		fmt.Printf("failed to subscribe to topic: %s\n", err)
+		fmt.Printf("failed to subscribe to topic: %v\n", err)
 		os.Exit(1)
 	}
 
