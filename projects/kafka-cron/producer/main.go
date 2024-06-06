@@ -7,6 +7,7 @@ import (
 	"kafka-cron/utils"
 	"log"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -60,7 +61,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		err := scheduler.Scheduler(p, clusterAJobs, topic1)
+		err := scheduler.Scheduler(p, clusterAJobs, topic1, 5*time.Minute)
 		if err != nil {
 			log.Printf("Error scheduling jobs for cluster a: %v", err)
 		}
@@ -68,7 +69,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		err = scheduler.Scheduler(p, clusterBJobs, topic2)
+		err = scheduler.Scheduler(p, clusterBJobs, topic2, 5*time.Minute)
 		if err != nil {
 			log.Printf("Error scheduling jobs for cluster b:  %v", err)
 		}
