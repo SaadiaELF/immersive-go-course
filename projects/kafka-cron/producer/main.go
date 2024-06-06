@@ -22,7 +22,7 @@ func main() {
 		log.Fatalf("error parsing the configuration file: %v", err)
 	}
 
-	topic1, topic2, brokers := utils.Args()
+	topic1, topic2, brokers, _ := utils.Args()
 
 	// Create the Kafka producer
 	p, err := producer.Producer(brokers)
