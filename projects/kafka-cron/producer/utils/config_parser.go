@@ -1,42 +1,37 @@
 package utils
 
 import (
-	"bufio"
-	"fmt"
+	"encoding/json"
+	"io"
 	"kafka-cron/pkg/models"
 	"os"
-	"strings"
 )
 
-func ParseConfig(cluster string) ([]models.CronJob, error) {
+func ReadConfig() ([]byte, error) {
 
-	path := "./config/crontab"
+	path := "./config/cron-config.json"
+
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+
+}
+func ParseConfig(data []byte) ([]models.CronJob, error) {
 	var jobs []models.CronJob
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		// Skip comments
-		if len(line) == 0 || line[0] == '#' {
-			continue
-		}
-		fields := strings.Fields(line)
-		if len(fields) < 6 {
-			return nil, fmt.Errorf("invalid crontab line")
-		}
-
-		job := models.CronJob{
-			Schedule: strings.Join(fields[0:6], " "),
-			Command:  strings.Join(fields[6:], " "),
-			Cluster:  cluster,
-		}
-		jobs = append(jobs, job)
+	err := json.Unmarshal(data, &jobs)
+	if err != nil {
+		return nil, err
 	}
 
 	return jobs, nil
+
 }
