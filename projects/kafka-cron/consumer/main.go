@@ -7,7 +7,6 @@ import (
 	"kafka-cron/consumer/internal/executor"
 	"kafka-cron/consumer/utils"
 	"kafka-cron/pkg/models"
-	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -32,14 +31,13 @@ func main() {
 		fmt.Printf("failed to initialise consumer: %s\n", err)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	done := make(chan bool)
 
 	go func() {
-		defer wg.Done()
 		processMessages(consumer)
 	}()
-	wg.Wait()
+
+	done <- true
 }
 
 func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
