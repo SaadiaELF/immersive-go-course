@@ -15,23 +15,14 @@ func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic1 string, topic2 s
 
 	c := cron.New(cron.WithSeconds())
 
-	// Schedule the jobs
 	for _, job := range jobs {
-		var topic string
-		switch job.Cluster {
-		case "cluster-a":
-			topic = topic1
-		case "cluster-b":
-			topic = topic2
-		default:
-			log.Printf("Warning: Jobs has an unknown cluster %s", job.Cluster)
+		topic := chooseTopic(job.Cluster, topic1, topic2)
+		if topic == "" {
+			log.Printf("Warning: Jobs has an empty topic for cluster %s", job.Cluster)
+			continue
 		}
-		_, err := c.AddFunc(job.Schedule, func() {
-			err := producer.ProduceMessage(p, topic, job)
-			if err != nil {
-				fmt.Printf("error producing message: %v", err)
-			}
-		})
+
+		err := scheduleJob(c, p, job, topic)
 		if err != nil {
 			return fmt.Errorf("error scheduling job: %w", err)
 		}
@@ -42,5 +33,30 @@ func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic1 string, topic2 s
 	time.Sleep(duration)
 
 	c.Stop()
+	return nil
+}
+
+func chooseTopic(cluster string, topic1 string, topic2 string) string {
+	switch cluster {
+	case "cluster-a":
+		return topic1
+	case "cluster-b":
+		return topic2
+	default:
+		log.Printf("Warning: Jobs has an unknown cluster %s", cluster)
+		return ""
+	}
+}
+
+func scheduleJob(c *cron.Cron, p *kafka.Producer, job models.CronJob, topic string) error {
+	_, err := c.AddFunc(job.Schedule, func() {
+		err := producer.ProduceMessage(p, topic, job)
+		if err != nil {
+			fmt.Printf("error producing message: %v", err)
+		}
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
