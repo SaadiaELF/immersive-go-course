@@ -1,5 +1,5 @@
 #cron-job-a runs 5 seconds.
 */5 * * * * * echo 'Hello, world!'
 
-#cron-job-a runs every 10 seconds.
+#cron-job-b runs every 10 seconds.
 */10 * * * * * echo 'Goodbye, world!'
