@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kafka-cron/producer/config"
 	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/producer/utils"
@@ -10,15 +11,15 @@ import (
 
 func main() {
 
-	topic1, topic2, brokers, _ := utils.Args()
+	topic1, topic2, brokers := utils.Args()
 
 	// Read and parse the configuration file
-	data, err := utils.ReadConfig()
+	data, err := config.ReadConfig()
 	if err != nil {
 		log.Fatalf("error reading the configuration file: %v", err)
 	}
 
-	jobs, err := utils.ParseConfig(data)
+	jobs, err := config.ParseConfig(data)
 	if err != nil {
 		log.Fatalf("error parsing the configuration file: %v", err)
 	}
@@ -31,13 +32,17 @@ func main() {
 	}
 
 	// Create the Kafka topics
-	err = producer.CreateTopic(p, topic1)
-	if err != nil {
-		log.Printf("Error creating Kafka topic1: %v", err)
+	if topic1 != "" {
+		err = producer.CreateTopic(p, topic1)
+		if err != nil {
+			log.Printf("Error creating Kafka topic1: %v", err)
+		}
 	}
-	err = producer.CreateTopic(p, topic2)
-	if err != nil {
-		log.Printf("Error creating Kafka topic2: %v", err)
+	if topic2 != "" {
+		err = producer.CreateTopic(p, topic2)
+		if err != nil {
+			log.Printf("Error creating Kafka topic2: %v", err)
+		}
 	}
 
 	done := make(chan bool)
