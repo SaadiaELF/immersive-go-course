@@ -1,7 +1,6 @@
 package models
 
 type CronJob struct {
-	Name          string `json:"name"`
 	Id            string `json:"id"`
 	Schedule      string `json:"schedule"`
 	Command       string `json:"command"`
