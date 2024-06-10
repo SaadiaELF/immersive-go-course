@@ -5,22 +5,31 @@ import (
 	"fmt"
 	"kafka-cron/consumer/internal/consumer"
 	"kafka-cron/consumer/internal/executor"
+	"kafka-cron/consumer/internal/producer"
 	"kafka-cron/consumer/utils"
 	"kafka-cron/pkg/models"
+	"log"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 func main() {
 
-	topic1, topic2, brokers, cluster := utils.Args()
+	topic1, topic2, brokers, cluster, retry := utils.Args()
 
 	var topic string
 	switch cluster {
 	case "cluster-a":
 		topic = topic1
+		if retry {
+			topic = topic + "-retry"
+		}
 	case "cluster-b":
 		topic = topic2
+		if retry {
+			topic = topic + "-retry"
+		}
 	default:
 		fmt.Printf("Invalid cluster specified: %s. Use 'cluster-a' or 'cluster-b'.\n", cluster)
 		return
@@ -31,10 +40,16 @@ func main() {
 		fmt.Printf("failed to initialise consumer: %s\n", err)
 	}
 
+	// Create the Kafka producer
+	p, err := producer.Producer(brokers)
+	if err != nil {
+		log.Fatalf("Error creating Kafka producer: %v", err)
+
+	}
 	done := make(chan bool)
 
 	go func() {
-		processMessages(consumer)
+		processMessages(p, consumer)
 	}()
 
 	done <- true
@@ -45,8 +60,8 @@ func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consumer: %s", err)
 	}
-
 	err = cons.Subscribe(topic, nil)
+	// err = cons.SubscribeTopics(topics, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to topic: %s", err)
 
@@ -55,7 +70,7 @@ func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 	return cons, nil
 }
 
-func processMessages(con *kafka.Consumer) {
+func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 	for {
 		msg, err := con.ReadMessage(-1)
 		if err == nil {
@@ -66,12 +81,28 @@ func processMessages(con *kafka.Consumer) {
 				fmt.Printf("failed to unmarshal message: %v\n", err)
 				continue
 			}
+
 			err = executor.Execute(job)
 			if err != nil {
-				fmt.Printf("failed to execute job: %v\n", err)
+				fmt.Printf("Job failed: %v\n", err)
+				if job.Retries > 0 {
+					job.Retries--
+					RetryJob(p, job, job.RetryTopic)
+					time.Sleep(time.Duration(job.RetryInterval) * time.Second)
+				} else {
+					fmt.Printf("No more retries for job: %v\n", job.Id)
+				}
 			}
 		} else {
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
 		}
+	}
+}
+
+func RetryJob(p *kafka.Producer, job models.CronJob, topic string) {
+	fmt.Println("Retrying job")
+	err := producer.ProduceMessage(p, topic, job)
+	if err != nil {
+		fmt.Printf("error producing message: %v", err)
 	}
 }
