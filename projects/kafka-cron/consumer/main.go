@@ -81,18 +81,20 @@ func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 				fmt.Printf("failed to unmarshal message: %v\n", err)
 				continue
 			}
-
 			err = executor.Execute(job)
+
 			if err != nil {
 				fmt.Printf("Job failed: %v\n", err)
 				if job.Retries > 0 {
 					job.Retries--
 					RetryJob(p, job, job.RetryTopic)
 					time.Sleep(time.Duration(job.RetryInterval) * time.Second)
-				} else {
+				}
+				if job.Retries == 0 {
 					fmt.Printf("No more retries for job: %v\n", job.Id)
 				}
 			}
+
 		} else {
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
 		}
