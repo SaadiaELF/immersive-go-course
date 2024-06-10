@@ -1,16 +1,20 @@
  [
   {
     "name": "cron-job-A",
-    "schedule": "*/15 * * * * *",
+    "schedule": "*/10 * * * * *",
     "command": "echo 'Hello, world!'",
     "cluster": "cluster-a",
+    "retry_interval": 10,
+    "retries": 3,
     "description": "A simple cron job that runs every 15 seconds."
   },
   {
     "name": "cron-job-B",
     "schedule": "*/30 * * * * *",
     "command": "echo 'Goodbye, world!'",
-     "cluster": "cluster-b",
+    "cluster": "cluster-b",
+    "retry_interval": 10,
+    "retries": 3,
     "description": "A simple cron job that runs every 30 seconds."
   }
 ]
