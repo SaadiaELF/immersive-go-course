@@ -83,3 +83,35 @@ services:
         "--topic2", "topic2",
         "--cluster", "cluster-b"
       ]
+
+  kafka-retry-consumer-1:
+      image: kafka-consumer
+      container_name: kafka-retry-consumer-1
+      build:
+        dockerfile: ./consumer/Dockerfile
+      platform: linux/amd64
+      depends_on:
+        - kafka1
+      command : [
+        "--brokers", "kafka1:19092",
+        "--topic1", "topic1",
+        "--topic2", "topic2",
+        "--cluster", "cluster-a",
+        "--retry" , "true"
+      ]
+
+  kafka-retry-consumer-2:
+      image: kafka-consumer
+      container_name: kafka-retry-consumer-2
+      build:
+        dockerfile: ./consumer/Dockerfile
+      platform: linux/amd64
+      depends_on:
+        - kafka1
+      command : [
+        "--brokers", "kafka1:19092",
+        "--topic1", "topic1",
+        "--topic2", "topic2",
+        "--cluster", "cluster-b",
+        "--retry" , "true"
+      ]    
