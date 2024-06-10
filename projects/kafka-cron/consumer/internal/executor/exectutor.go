@@ -11,6 +11,6 @@ func Execute(job models.CronJob) error {
 	cmd := exec.Command("sh", "-c", job.Command)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	fmt.Println("Executing job:", job.Command)
+	fmt.Println("Executing job:", job.Id)
 	return cmd.Run()
 }
