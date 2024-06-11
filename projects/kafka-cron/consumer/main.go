@@ -61,7 +61,6 @@ func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 		return nil, fmt.Errorf("failed to create consumer: %s", err)
 	}
 	err = cons.Subscribe(topic, nil)
-	// err = cons.SubscribeTopics(topics, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to topic: %s", err)
 
@@ -74,7 +73,7 @@ func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 	for {
 		msg, err := con.ReadMessage(-1)
 		if err == nil {
-			fmt.Printf("Message for %s on %s: ", *msg.TopicPartition.Topic, msg.TopicPartition)
+			fmt.Printf("Message for %s on %s: \n", *msg.TopicPartition.Topic, msg.TopicPartition)
 			var job models.CronJob
 			err = json.Unmarshal(msg.Value, &job)
 			if err != nil {
