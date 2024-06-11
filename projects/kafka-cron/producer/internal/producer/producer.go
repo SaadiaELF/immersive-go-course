@@ -68,6 +68,7 @@ func ProduceMessage(p *kafka.Producer, topic string, job models.CronJob) error {
 	id := uuid.New().String()
 	job.RetryTopic = topic + "-retry"
 	job.Id = id
+	job.StartTime = time.Now()
 	message, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
