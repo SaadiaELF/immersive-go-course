@@ -1,4 +1,6 @@
 version: '2.1'
+volumes:
+  prometheus_data: {}
 
 services:
   zoo1:
@@ -51,6 +53,8 @@ services:
     platform: linux/amd64
     depends_on:
       - kafka1
+    ports:
+      - "2112:2112"
     command : [
       "--brokers", "kafka1:19092",
       "--topic1", "topic1",
@@ -119,3 +123,21 @@ services:
         "--cluster", "cluster-b",
         "--retry" , "true"
       ]    
+
+  prometheus:
+    container_name: prometheus
+    hostname: prometheus
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      # - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    # links:
+    #   - alertmanager:alertmanager
+    ports:
+      - 9090:9090 
+    depends_on:
+      - kafka-producer
+ 
