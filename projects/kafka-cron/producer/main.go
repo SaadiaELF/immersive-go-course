@@ -1,16 +1,23 @@
 package main
 
 import (
+	"kafka-cron/pkg/models"
 	"kafka-cron/producer/config"
 	"kafka-cron/producer/internal/producer"
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/producer/utils"
 	"log"
+	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
-
+	prometheus.MustRegister(models.CronJobLatency)
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":2112", nil)
 	topic1, topic2, brokers := utils.Args()
 
 	// Read and parse the configuration file
