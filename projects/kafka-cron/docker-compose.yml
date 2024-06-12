@@ -53,8 +53,6 @@ services:
     platform: linux/amd64
     depends_on:
       - kafka1
-    ports:
-      - "2112:2112"
     command : [
       "--brokers", "kafka1:19092",
       "--topic1", "topic1",
@@ -70,6 +68,8 @@ services:
     platform: linux/amd64
     depends_on:
       - kafka1
+    ports:
+      - "2112:2112"
     command : [
       "--brokers", "kafka1:19092",
       "--topic1", "topic1",
@@ -139,5 +139,5 @@ services:
     ports:
       - 9090:9090 
     depends_on:
-      - kafka-producer
+      - kafka-consumer-1
  
