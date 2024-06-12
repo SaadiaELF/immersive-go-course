@@ -49,8 +49,8 @@ services:
       - kafka1
     command : [
       "--brokers", "kafka1:19092",
-      "--topic1", "topic1",
-      "--topic2", "topic2",
+      "--topics", "topic1,topic2",
+      "--clusters", "cluster-a,cluster-b"
     ]
 
 
@@ -64,8 +64,7 @@ services:
       - kafka1
     command : [
       "--brokers", "kafka1:19092",
-      "--topic1", "topic1",
-      "--topic2", "topic2",
+      "--topics", "topic1,topic2",
       "--cluster", "cluster-a"
     ]
 
@@ -79,7 +78,6 @@ services:
         - kafka1
       command : [
         "--brokers", "kafka1:19092",
-        "--topic1", "topic1",
-        "--topic2", "topic2",
+        "--topics", "topic1,topic2",
         "--cluster", "cluster-b"
       ]
