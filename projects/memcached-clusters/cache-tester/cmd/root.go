@@ -45,16 +45,17 @@ func Execute() {
 		item, err = mc.Get("hello")
 		if err != nil {
 			fmt.Printf("Error getting key from memcached server %v: %v\n", i, err)
+		} else {
+			items = append(items, item)
 		}
-		if err == memcache.ErrCacheMiss {
-			fmt.Println("Cache typology: sharded")
-			return
-		}
-		items = append(items, item)
 	}
 
-	if allItemsEqual(items) {
+	if len(items) == 1 {
+		fmt.Println("Memcached cluster typology : sharded")
+	} else if allItemsEqual(items) {
 		fmt.Println("Memcached cluster typology : replicated")
+	} else {
+		fmt.Println("Memcached cluster typology : unknown")
 	}
 
 }
