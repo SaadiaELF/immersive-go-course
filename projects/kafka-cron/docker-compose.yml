@@ -85,6 +85,8 @@ services:
       platform: linux/amd64
       depends_on:
         - kafka1
+      ports:
+      - "2113:2112"
       command : [
         "--brokers", "kafka1:19092",
         "--topic1", "topic1",
@@ -130,14 +132,25 @@ services:
     image: prom/prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      # - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    # links:
-    #   - alertmanager:alertmanager
+    links:
+      - alertmanager:alertmanager
     ports:
       - 9090:9090 
     depends_on:
       - kafka-consumer-1
+      - kafka-consumer-2
  
+  alertmanager:
+    container_name: alertmanager
+    hostname: alertmanager
+    image: prom/alertmanager
+    volumes:
+      - ./alertmanager.conf:/etc/alertmanager/alertmanager.conf
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.conf'
+    ports:
+      - 9093:9093
