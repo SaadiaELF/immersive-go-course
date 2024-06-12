@@ -12,6 +12,4 @@ FROM buildpack-deps:bullseye-scm
 
 COPY --from=build /out/producer /producer
 
-EXPOSE 2112
-
 ENTRYPOINT ["/producer"]
