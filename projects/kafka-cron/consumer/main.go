@@ -7,24 +7,23 @@ import (
 	"kafka-cron/consumer/internal/executor"
 	"kafka-cron/consumer/utils"
 	"kafka-cron/pkg/models"
+	"strings"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 func main() {
 
-	topic1, topic2, brokers, cluster := utils.Args()
+	ts, brokers, cluster := utils.Args()
+	topics := strings.Split(ts, ",")
 
-	var topic string
-	switch cluster {
-	case "cluster-a":
-		topic = topic1
-	case "cluster-b":
-		topic = topic2
-	default:
-		fmt.Printf("Invalid cluster specified: %s. Use 'cluster-a' or 'cluster-b'.\n", cluster)
-		return
+	// Map the topics to the clusters
+	mapTopics := map[string]string{
+		"cluster-a": topics[0],
+		"cluster-b": topics[1],
 	}
+
+	topic := mapTopics[cluster]
 
 	consumer, err := initialiseConsumer(brokers, topic)
 	if err != nil {
