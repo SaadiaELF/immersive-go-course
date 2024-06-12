@@ -43,12 +43,12 @@ func main() {
 func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 	cons, err := consumer.Consumer(brokers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create consumer: %s", err)
+		return nil, fmt.Errorf("failed to create consumer: %w", err)
 	}
 
 	err = cons.Subscribe(topic, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe to topic: %s", err)
+		return nil, fmt.Errorf("failed to subscribe to topic: %w", err)
 
 	}
 
