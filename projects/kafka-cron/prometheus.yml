@@ -23,12 +23,6 @@ scrape_configs:
   - job_name: "kafka"
     static_configs:
       - targets: ["kafka1:8999"]
-  - job_name: "kafka-producer"
+  - job_name: "kafka-consumer-1"
     static_configs:
-      - targets: ["kafka-producer:2112"]
-  # - job_name: "kafka-consumer-1"
-  #   static_configs:
-  #     - targets: ["kafka1:19092"]
-  # - job_name: "kafka-consumer-2"
-  #   static_configs:
-  #     - targets: ["kafka1:19092"]
+      - targets: ["kafka-consumer-1:2112"]
