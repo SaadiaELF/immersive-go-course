@@ -11,12 +11,12 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic1 string, topic2 string, duration time.Duration) error {
+func Scheduler(p *kafka.Producer, jobs []models.CronJob, mapTopics map[string]string, duration time.Duration) error {
 
 	c := cron.New(cron.WithSeconds())
 
 	for _, job := range jobs {
-		topic := chooseTopic(job.Cluster, topic1, topic2)
+		topic := mapTopics[job.Cluster]
 		if topic == "" {
 			log.Printf("Warning: Jobs has an empty topic for cluster %s", job.Cluster)
 			continue
@@ -34,18 +34,6 @@ func Scheduler(p *kafka.Producer, jobs []models.CronJob, topic1 string, topic2 s
 
 	c.Stop()
 	return nil
-}
-
-func chooseTopic(cluster string, topic1 string, topic2 string) string {
-	switch cluster {
-	case "cluster-a":
-		return topic1
-	case "cluster-b":
-		return topic2
-	default:
-		log.Printf("Warning: Jobs has an unknown cluster %s", cluster)
-		return ""
-	}
 }
 
 func scheduleJob(c *cron.Cron, p *kafka.Producer, job models.CronJob, topic string) error {
