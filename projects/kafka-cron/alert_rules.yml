@@ -1,0 +1,13 @@
+groups:  
+  - name: JobAge
+    rules:
+      - alert: JobBeingTooOld
+        # Condition for alerting
+        expr: rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) - ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="95"}[5m]) > 0.01
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'Job is too old'
+          description: 'Job has been waiting in the queue for more than 100 milliseconds in the last 5 minutes'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'critical'
