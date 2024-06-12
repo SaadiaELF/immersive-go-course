@@ -6,6 +6,6 @@ var (
 	CronJobLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "cron_job_latency_milliseconds",
 		Help:    "Latency of cron job execution in milliseconds.",
-		Buckets: prometheus.LinearBuckets(0, 5, 20),
+		Buckets: prometheus.LinearBuckets(0, 10, 10),
 	}, []string{"cluster"})
 )
