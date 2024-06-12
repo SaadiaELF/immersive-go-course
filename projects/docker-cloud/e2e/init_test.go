@@ -7,11 +7,21 @@ import (
 	"os"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 )
 
 func TestMain(m *testing.M) {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Printf("err loading: %v", err)
+	}
+	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "80"
+	}
+
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not construct pool: %s", err)
@@ -32,7 +42,7 @@ func TestMain(m *testing.M) {
 		Name:         "docker-cloud-e2e",
 		ExposedPorts: []string{"80/tcp"},
 		PortBindings: map[docker.Port][]docker.PortBinding{
-			"80/tcp": {{HostPort: "80"}},
+			"80/tcp": {{HostPort: port}},
 		}})
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
@@ -40,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	if err = pool.Retry(func() error {
 		fmt.Println("Checking API connection...")
-		_, err := http.Get("http://localhost:80/")
+		_, err := http.Get(fmt.Sprintf("http://localhost:%s/", port))
 		if err != nil {
 			log.Printf("Could not connect to server: %s", err)
 		}

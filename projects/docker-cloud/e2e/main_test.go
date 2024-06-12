@@ -4,10 +4,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
 func TestRoutes(t *testing.T) {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Printf("err loading: %v", err)
+	}
+	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "80"
+	}
 	testcases := []struct {
 		name     string
 		endpoint string
@@ -26,7 +37,7 @@ func TestRoutes(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:80%s", tc.endpoint), nil)
+			request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%s%s", port, tc.endpoint), nil)
 			if err != nil {
 				t.Fatalf("Could not create request: %v", err)
 			}
