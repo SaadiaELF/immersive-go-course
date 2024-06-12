@@ -12,7 +12,7 @@ func Execute(job models.CronJob) error {
 	cmd := exec.Command("sh", "-c", job.Command)
 	job.Latency = time.Since(job.StartTime)
 
-	models.CronJobLatency.Observe(float64(job.Latency.Microseconds()))
+	models.CronJobLatency.Observe(float64(job.Latency.Milliseconds()))
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
