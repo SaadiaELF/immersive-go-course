@@ -9,12 +9,20 @@ import (
 	"kafka-cron/consumer/utils"
 	"kafka-cron/pkg/models"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
+	prometheus.MustRegister(models.CronJobLatency)
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		http.ListenAndServe(":2112", nil)
+	}()
 
 	topic1, topic2, brokers, cluster, retry := utils.Args()
 
