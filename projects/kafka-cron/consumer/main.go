@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	consumer, err := initializeConsumer(brokers, topic)
+	consumer, err := initialiseConsumer(brokers, topic)
 	if err != nil {
 		fmt.Printf("failed to initialise consumer: %s\n", err)
 	}
@@ -40,7 +40,7 @@ func main() {
 	done <- true
 }
 
-func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
+func initialiseConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 	cons, err := consumer.Consumer(brokers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consumer: %w", err)
