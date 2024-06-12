@@ -1,13 +1,26 @@
 groups:  
-  - name: JobAge
+  - name: JobsAge
     rules:
-      - alert: JobBeingTooOld
+      - alert: JobsBeingTooOldInLast5Minutes
         # Condition for alerting
-        expr: rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) - ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="95"}[5m]) > 0.01
+        expr: (rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) - ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="90"}[5m]))/ ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) * 100 > 10
         # Annotation - additional informational labels to store more information
         annotations:
-          title: 'Job is too old'
-          description: 'Job has been waiting in the queue for more than 100 milliseconds in the last 5 minutes'
+          title: 'More than 10% of jobs are too old in the last 5 minutes'
+          description: 'Percentage of jobs that have been waiting in the queue for more than 90 milliseconds in the last 5 minutes'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'critical'
+
+  - name: RateOfJobAge
+    rules:
+      - alert: RateOfJobBeingTooOld
+        # Condition for alerting
+        expr: histogram_quantile(0.9, rate(cron_job_latency_milliseconds_bucket[30m]))> 90
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'More than 90% of jobs are too old in the last 30 minutes'
+          description: 'More than 90% of jobs have been waiting in the queue for more than 90 milliseconds in the last 30 minutes'
         # Labels - additional labels to be attached to the alert
         labels:
           severity: 'critical'
