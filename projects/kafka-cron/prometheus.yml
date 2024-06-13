@@ -24,6 +24,12 @@ scrape_configs:
   - job_name: "kafka-consumer-1"
     static_configs:
       - targets: ["kafka-consumer-1:2112"]
+  - job_name: "kafka-retry-consumer-1"
+    static_configs:
+      - targets: ["kafka-retry-consumer-1:2112"]    
   - job_name: "kafka-consumer-2"
     static_configs:
       - targets: ["kafka-consumer-2:2112"]
+  - job_name: "kafka-retry-consumer-2"
+    static_configs:
+      - targets: ["kafka-retry-consumer-2:2112"]    
