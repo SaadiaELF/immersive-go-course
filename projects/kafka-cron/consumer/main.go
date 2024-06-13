@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	prometheus.MustRegister(models.CronJobLatency, models.CronJobCount, models.CronJobErrorCount)
+	prometheus.MustRegister(models.CronJobLatency, models.CronJobCount, models.CronJobErrorCount, models.CronJobRetryCount)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		http.ListenAndServe(":2112", nil)
@@ -93,10 +93,10 @@ func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 					job.Retries--
 					RetryJob(p, job, job.RetryTopic)
 					time.Sleep(time.Duration(job.RetryInterval) * time.Second)
+					models.CronJobRetryCount.WithLabelValues(job.Cluster).Inc()
 				} else {
 					fmt.Printf("No more retries for job: %v\n", job.Id)
 					models.CronJobErrorCount.WithLabelValues(job.Cluster).Inc()
-					log.Printf("Incremented CronJobErrorCount for job %s in cluster %s\n", job.Id, job.Cluster)
 					break
 				}
 			} else {
