@@ -36,3 +36,15 @@ groups:
         # Labels - additional labels to be attached to the alert
         labels:
           severity: 'warning'
+  - name: RetryJobs
+    rules:
+      - alert: RetryJobs
+        # Condition for alerting
+        expr: sum by(cluster) (cron_job_retry_count )/ sum by(cluster) (cron_job_count) > 0.1
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'Retry jobs'
+          description: 'Number of jobs that have been retried is more than 10% of the total number of jobs'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'warning'
