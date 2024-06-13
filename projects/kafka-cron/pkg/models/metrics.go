@@ -23,3 +23,10 @@ var (
 		Help: "Number of cron jobs that failed.",
 	}, []string{"cluster"})
 )
+
+var (
+	CronJobRetryCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "cron_job_retry_count",
+		Help: "Number of cron jobs that were retried.",
+	}, []string{"cluster"})
+)
