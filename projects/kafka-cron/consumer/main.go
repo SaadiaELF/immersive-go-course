@@ -10,6 +10,7 @@ import (
 	"kafka-cron/pkg/models"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -24,26 +25,18 @@ func main() {
 		http.ListenAndServe(":2112", nil)
 	}()
 
-	topic1, topic2, brokers, cluster, retry := utils.Args()
+	ts, brokers, cluster, _ := utils.Args()
+	topics := strings.Split(ts, ",")
 
-	var topic string
-	switch cluster {
-	case "cluster-a":
-		topic = topic1
-		if retry {
-			topic = topic + "-retry"
-		}
-	case "cluster-b":
-		topic = topic2
-		if retry {
-			topic = topic + "-retry"
-		}
-	default:
-		fmt.Printf("Invalid cluster specified: %s. Use 'cluster-a' or 'cluster-b'.\n", cluster)
-		return
+	// Map the topics to the clusters
+	mapTopics := map[string]string{
+		"cluster-a": topics[0],
+		"cluster-b": topics[1],
 	}
 
-	consumer, err := initializeConsumer(brokers, topic)
+	topic := mapTopics[cluster]
+
+	consumer, err := initialiseConsumer(brokers, topic)
 	if err != nil {
 		fmt.Printf("failed to initialise consumer: %s\n", err)
 	}
@@ -63,14 +56,14 @@ func main() {
 	done <- true
 }
 
-func initializeConsumer(brokers string, topic string) (*kafka.Consumer, error) {
+func initialiseConsumer(brokers string, topic string) (*kafka.Consumer, error) {
 	cons, err := consumer.Consumer(brokers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create consumer: %s", err)
+		return nil, fmt.Errorf("failed to create consumer: %w", err)
 	}
 	err = cons.Subscribe(topic, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe to topic: %s", err)
+		return nil, fmt.Errorf("failed to subscribe to topic: %w", err)
 
 	}
 

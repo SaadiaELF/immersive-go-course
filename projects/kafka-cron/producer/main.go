@@ -6,11 +6,24 @@ import (
 	"kafka-cron/producer/internal/scheduler"
 	"kafka-cron/producer/utils"
 	"log"
+	"strings"
 	"time"
 )
 
 func main() {
-	topic1, topic2, brokers := utils.Args()
+
+	ts, cs, brokers := utils.Args()
+	topics := strings.Split(ts, ",")
+	clusters := strings.Split(cs, ",")
+
+	// Map the topics to the clusters
+	if len(clusters) != len(topics) {
+		log.Fatalf("Number of clusters and topics do not match")
+	}
+	mapTopics := make(map[string]string)
+	for i, cluster := range clusters {
+		mapTopics[cluster] = topics[i]
+	}
 
 	// Read and parse the configuration file
 	data, err := config.ReadConfig()
@@ -31,25 +44,13 @@ func main() {
 	}
 
 	// Create the Kafka topics
-	if topic1 != "" {
-		err = producer.CreateTopic(p, topic1)
+	for _, topic := range topics {
+		err = producer.CreateTopic(p, topic)
 		if err != nil {
-			log.Printf("Error creating Kafka topic1: %v", err)
+			log.Printf("Error creating Kafka topic: %v", err)
 		}
 		//create retry topic
-		err = producer.CreateTopic(p, topic1+"-retry")
-		if err != nil {
-			log.Printf("Error creating Kafka topic1-retry: %v", err)
-		}
-	}
-
-	if topic2 != "" {
-		err = producer.CreateTopic(p, topic2)
-		if err != nil {
-			log.Printf("Error creating Kafka topic2: %v", err)
-		}
-		//create retry topic
-		err = producer.CreateTopic(p, topic2+"-retry")
+		err = producer.CreateTopic(p, topic+"-retry")
 		if err != nil {
 			log.Printf("Error creating Kafka topic2-retry: %v", err)
 		}
@@ -57,8 +58,7 @@ func main() {
 
 	done := make(chan bool)
 	go func() {
-
-		err := scheduler.Scheduler(p, jobs, topic1, topic2, 5*time.Minute)
+		err := scheduler.Scheduler(p, jobs, mapTopics, 5*time.Minute)
 		if err != nil {
 			log.Printf("Error scheduling jobs for cluster: %v", err)
 		}
