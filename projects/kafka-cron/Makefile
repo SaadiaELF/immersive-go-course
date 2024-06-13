@@ -9,5 +9,5 @@ build:
 run: build
 	docker compose up	
 
-stop:
+stop: prune
 	docker compose down
