@@ -25,7 +25,7 @@ func main() {
 		http.ListenAndServe(":2112", nil)
 	}()
 
-	ts, brokers, cluster, _ := utils.Args()
+	ts, brokers, cluster, retry := utils.Args()
 	topics := strings.Split(ts, ",")
 
 	// Map the topics to the clusters
@@ -35,6 +35,10 @@ func main() {
 	}
 
 	topic := mapTopics[cluster]
+
+	if retry {
+		topic = topic + "-retry"
+	}
 
 	consumer, err := initialiseConsumer(brokers, topic)
 	if err != nil {
@@ -81,18 +85,21 @@ func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 				fmt.Printf("failed to unmarshal message: %v\n", err)
 				continue
 			}
-			err = executor.Execute(job)
 
+			err = executor.Execute(job)
 			if err != nil {
-				fmt.Printf("Job failed: %v\n", err)
+				fmt.Printf("Job %s failed: %v\n", job.Id, err)
 				if job.Retries > 0 {
 					job.Retries--
 					RetryJob(p, job, job.RetryTopic)
 					time.Sleep(time.Duration(job.RetryInterval) * time.Second)
-				}
-				if job.Retries == 0 {
+				} else {
 					fmt.Printf("No more retries for job: %v\n", job.Id)
+					break
 				}
+			} else {
+				fmt.Printf("Job %s executed successfully\n", job.Id)
+				continue
 			}
 
 		} else {
@@ -102,7 +109,7 @@ func processMessages(p *kafka.Producer, con *kafka.Consumer) {
 }
 
 func RetryJob(p *kafka.Producer, job models.CronJob, topic string) {
-	fmt.Println("Retrying job")
+	fmt.Printf("Retrying job %s\n", job.Id)
 	err := producer.ProduceMessage(p, topic, job)
 	if err != nil {
 		fmt.Printf("error producing message: %v", err)
