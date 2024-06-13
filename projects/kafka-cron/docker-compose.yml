@@ -100,6 +100,8 @@ services:
       platform: linux/amd64
       depends_on:
         - kafka1
+      ports:
+        - "21121:2112"
       command : [
         "--brokers", "kafka1:19092",
         "--topics", "topic1,topic2",
@@ -115,6 +117,8 @@ services:
       platform: linux/amd64
       depends_on:
         - kafka1
+      ports:
+        - "21131:2112"
       command : [
         "--brokers", "kafka1:19092",
         "--topics", "topic1,topic2",
@@ -139,6 +143,8 @@ services:
     depends_on:
       - kafka-consumer-1
       - kafka-consumer-2
+      - kafka-retry-consumer-1
+      - kafka-retry-consumer-2
  
   alertmanager:
     container_name: alertmanager
