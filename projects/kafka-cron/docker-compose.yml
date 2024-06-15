@@ -1,6 +1,7 @@
 version: '2.1'
 volumes:
   prometheus_data: {}
+  grafana_data: {}
 
 services:
   zoo1:
@@ -156,3 +157,14 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.conf'
     ports:
       - 9093:9093
+
+  grafana:
+    container_name: grafana
+    hostname: grafana
+    image: grafana/grafana
+    volumes:
+      - ./grafana/grafana_datasources.yml:/etc/grafana/provisioning/datasources/all.yaml
+      - ./grafana/grafana_config.ini:/etc/grafana/config.ini
+      - grafana_data:/var/lib/grafana
+    ports:
+      - 3000:3000
