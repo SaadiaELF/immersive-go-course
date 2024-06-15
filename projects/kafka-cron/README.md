@@ -73,12 +73,13 @@ Test our implementation and observe both of our consumers running jobs scheduled
 
 ### Part 2: Distributed cron with multiple queues
 
-A new requirement: our distributed cron system needs to be able to schedule jobs to run in multiple clusters. Imagine that we want to support users who have data stored in specific clusters and they want to make sure their cron jobs are running near their data.
+A new requirement: our distributed cron system needs to be able to schedule jobs to run in multiple clusters. Imagine that we want to support users who have data stored in specific cells/AZs and they want to make sure their cron jobs are running near their data.
 
-We don't really need to set up any clusters - just write our program as though you had multiple sets of consumer workers in different clusters.
+We don't really need to set up any cells for this - just write our program as though you had multiple sets of consumer workers. 
+You *don't* need to set up multiple Kafka clusters for this - this extension is just about having multiple sets of consumer jobs, which we notionally call clusters.
 
 - Define a set of clusters in our program (two is fine, `cluster-a` and `cluster-b`)
-- Each cluster should have its own Kafka topic
+- Each cluster should have its own Kafka topic 
 - Update the job format so that jobs must specify what cluster to run in
 - Run separate consumers that are configured to read from each cluster-specific topic
 
@@ -241,6 +242,38 @@ Try running multiple Kafka brokers and Zookeeper servers with our producers and 
 How many containers being down can our system tolerate?
 
 What happens to the Kafka system logs and the metrics that our binaries export? Did our alerts fire? If not, consider how they could be improved - remember, the point of them is to tell us when something's wrong!
+
+### Porting your system from docker-compose to minikube
+
+In this project, and in several previous projects, you have used `docker-compose` to deploy our code, alongside dependencies (such as Kafka and
+Zookeeper here). `docker-compose` is an extremely convenient tool for running a multi-part software stack locally (it also works well for running 
+integration tests in a Continuous Integration workflow as part of your development process). However, in most deployments, we want to be able
+to run our code and its dependencies across more than one host, in order to scale horizontally and to be robust to single-node failures. For this,
+`kubernetes` is a better tool. `Kubernetes`, like `docker-compose`, is a platform for running containerised applications, but where `docker-compose` 
+is focused on running a set of related containers on a single host, `kubernetes` is optimized for running services across many hosts.
+
+Here are some introductions to Kubernetes: 
+ * [What is Kubernetes](https://www.digitalocean.com/community/tutorials/an-introduction-to-kubernetes)
+ * [Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/) - explore the linked pages here
+
+You may have already used `minikube` in one of the previous projects. `Minikube` is a local version of Kubernetes, which we can use to learn 
+(rather than needing to incur the expense of cloud services such as [EKS](https://aws.amazon.com/eks/) for learning on.)
+
+Get your local `minikube setup` working by following [minikube start](https://minikube.sigs.k8s.io/docs/start/).
+Follow the steps to install the program and run the `hello-minikube` application.
+
+Once you have done this, you will need to convert your `docker-compose.yml` files to `kubernetes` deployment files.
+There is a tool, [kompose](https://kubernetes.io/docs/tasks/configure-pod-container/translate-compose-kubernetes/) which may assist you.
+
+> **Note:** `kompose` *will not* give you perfect results, however. In particular, `kompose` will not correctly convert cases where you are using a `docker-compose` `volume` to map a configuration file into your running container. `kompose` will just create a `persistentVolumeClaim` with empty data. The best thing to do is to remove those and use a [ConfigMap] for the config file content and map that in as a volume. You'll have to do this by hand. Note that there are some `persistentVolumeClaims` for application data that are appropriate - don't remove these, only the ones that are substituted for config. 
+
+Test that your system works as it did on `docker-compose`.
+
+Learn your way around the `kubernetes` command-line tool, `kubectl` (see the [kubectl documentation](https://kubernetes.io/docs/reference/kubectl/)).
+* How can you resize your service, i.e. change the number of running instances (pods)?
+* How can you remove one instance of your service (a single pod)?
+* How can you see the logs for your service?
+* How can you see the log of Kubernetes' management operations?
 
 ### Dealing with long-running jobs and load (challenging)
 
