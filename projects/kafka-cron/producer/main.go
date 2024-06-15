@@ -49,13 +49,18 @@ func main() {
 		if err != nil {
 			log.Printf("Error creating Kafka topic: %v", err)
 		}
+		//create retry topic
+		err = producer.CreateTopic(p, topic+"-retry")
+		if err != nil {
+			log.Printf("Error creating Kafka topic2-retry: %v", err)
+		}
 	}
 
 	done := make(chan bool)
 	go func() {
 		err := scheduler.Scheduler(p, jobs, mapTopics, 5*time.Minute)
 		if err != nil {
-			log.Printf("Error scheduling jobs for cluster a: %v", err)
+			log.Printf("Error scheduling jobs for cluster: %v", err)
 		}
 	}()
 	done <- true

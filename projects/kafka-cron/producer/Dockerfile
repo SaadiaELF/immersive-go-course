@@ -1,22 +1,15 @@
-FROM golang:1.22-bullseye as build
+FROM golang:1.22-bullseye as build 
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
+ENV GOCACHE=/root/.cache/go-build
 
-RUN go mod download
+RUN --mount=type=cache,target="/root/.cache/go-build" --mount=type=bind,target=/app,source=. go mod download
 
-
-COPY producer ./producer
-COPY pkg ./pkg
-
-RUN mkdir -p /out
-RUN go build -o /out/producer ./producer
+RUN --mount=type=cache,target="/root/.cache/go-build" --mount=type=bind,target=/app,source=. go build -o /out/producer ./producer
 
 FROM buildpack-deps:bullseye-scm 
 
 COPY --from=build /out/producer /producer
-
 
 ENTRYPOINT ["/producer"]

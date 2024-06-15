@@ -1,0 +1,50 @@
+groups:  
+  - name: JobsAge
+    rules:
+      - alert: JobsBeingTooOldInLast5Minutes
+        # Condition for alerting
+        expr: (rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) - ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="90"}[5m]))/ ignoring(le) rate(cron_job_latency_milliseconds_bucket{le="+Inf"}[5m]) * 100 > 10
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'More than 10% of jobs are too old in the last 5 minutes'
+          description: 'Percentage of jobs that have been waiting in the queue for more than 90 milliseconds in the last 5 minutes'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'critical'
+  - name: RateOfJobAge
+    rules:
+      - alert: RateOfJobBeingTooOld
+        # Condition for alerting
+        expr: histogram_quantile(0.9, rate(cron_job_latency_milliseconds_bucket[30m]))> 90
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'More than 90% of jobs are too old in the last 30 minutes'
+          description: 'More than 90% of jobs have been waiting in the queue for more than 90 milliseconds in the last 30 minutes'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'critical'
+  
+  - name : FailingJobs
+    rules:
+      - alert: FailingJobs
+        # Condition for alerting
+        expr: sum by(cluster) (cron_job_error_count )/ sum by(cluster) (cron_job_count) > 0.1
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'Failing jobs'
+          description: 'Number of jobs that have failed is more than 10% of the total number of jobs'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'warning'
+  - name: RetryJobs
+    rules:
+      - alert: RetryJobs
+        # Condition for alerting
+        expr: sum by(cluster) (cron_job_retry_count )/ sum by(cluster) (cron_job_count) > 0.1
+        # Annotation - additional informational labels to store more information
+        annotations:
+          title: 'Retry jobs'
+          description: 'Number of jobs that have been retried is more than 10% of the total number of jobs'
+        # Labels - additional labels to be attached to the alert
+        labels:
+          severity: 'warning'

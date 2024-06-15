@@ -65,6 +65,10 @@ func CreateTopic(p *kafka.Producer, topic string) error {
 
 func ProduceMessage(p *kafka.Producer, topic string, job models.CronJob) error {
 	deliveryChan := make(chan kafka.Event)
+	id := uuid.New().String()
+	job.RetryTopic = topic + "-retry"
+	job.Id = id
+	job.StartTime = time.Now()
 	message, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
@@ -72,7 +76,7 @@ func ProduceMessage(p *kafka.Producer, topic string, job models.CronJob) error {
 
 	err = p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Key:            []byte(uuid.New().String()),
+		Key:            []byte(id),
 		Value:          []byte(message),
 	}, deliveryChan)
 	if err != nil {
